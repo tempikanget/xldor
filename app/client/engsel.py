@@ -247,46 +247,61 @@ def get_balance(api_key: str, id_token: str) -> dict:
         print("Error getting balance:", res.get("error", "Unknown error"))
         return None
     
-def get_main_quota(api_key: str, id_token: str) -> str:
+def get_main_quota(api_key: str, id_token: str) -> dict:
     """
-    Fetches all quotas and returns a formatted string for the main quota.
+    Fetches all data quotas, aggregates them, and returns a dictionary.
     """
     path = "api/v8/packages/quota-details"
-    
     payload = {
         "is_enterprise": False,
         "lang": "en",
         "family_member_id": ""
     }
-    
+
     res = send_api_request(api_key, path, payload, id_token, "POST")
     if res.get("status") != "SUCCESS":
-        return "Gagal memuat kuota"
+        return {"error": "Gagal memuat kuota"}
 
     quotas = res.get("data", {}).get("quotas", [])
     if not quotas:
-        return "Tidak ada kuota"
+        return {"remaining": 0, "total": 0, "has_unlimited": False}
 
-    # Find the most likely main quota
-    main_quota = None
-    for q in quotas:
-        # Prioritize quotas with "24 Jam" or "internet" in their name
-        if "24 Jam" in q.get("name", "") or "internet" in q.get("name", "").lower():
-            main_quota = q
-            break
-    
-    # Fallback to the first quota if no specific one is found
-    if not main_quota and quotas:
-        main_quota = quotas[0]
+    total_remaining = 0
+    total_quota = 0
+    has_unlimited = False
 
-    if main_quota and main_quota.get("remaining", 0) > 0:
-        remaining_bytes = main_quota.get("remaining", 0)
-        if remaining_bytes >= 1024**3:
-            return f"{remaining_bytes / (1024**3):.2f} GB"
-        else:
-            return f"{remaining_bytes / (1024**2):.2f} MB"
+    for quota in quotas:
+        if quota.get("data_type") == "DATA":
+            total_remaining += quota.get("remaining", 0)
+            total_quota += quota.get("total", 0)
+            if quota.get("is_unlimited"):
+                has_unlimited = True
+
+    return {
+        "remaining": total_remaining,
+        "total": total_quota,
+        "has_unlimited": has_unlimited
+    }
+
+def get_point_balance(api_key: str, tokens: dict) -> int:
+    """
+    Fetches the user's point balance from the login info endpoint.
+    """
+    path = "api/v8/auth/login"
+    payload = {
+        "access_token": tokens.get("access_token"),
+        "is_enterprise": False,
+        "lang": "en"
+    }
     
-    return "0 MB"
+    res = send_api_request(api_key, path, payload, tokens.get("id_token"), "POST")
+    
+    if res.get("status") != "SUCCESS" or "data" not in res:
+        print("Gagal mengambil sisa poin.")
+        return 0
+        
+    # The point balance is nested within the response
+    return res.get("data", {}).get("loyalty", {}).get("point_balance", 0)
 
 def get_family(
     api_key: str,

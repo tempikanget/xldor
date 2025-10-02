@@ -9,9 +9,10 @@ from app.menus.package import fetch_my_packages, get_packages_by_family, show_pa
 from app.menus.family_bookmark import show_family_bookmark_menu
 from app.menus.bundle import show_bundle_menu
 from app.menus.hot import show_hot_menu, show_hot_menu2
+from app.menus.points import run_point_exchange
 from app.service.sentry import enter_sentry_mode
 
-def show_main_menu(number, balance, balance_expired_at, main_quota):
+def show_main_menu(number, balance, balance_expired_at, display_quota=None):
     clear_screen()
     phone_number = number
     remaining_balance = balance
@@ -21,8 +22,10 @@ def show_main_menu(number, balance, balance_expired_at, main_quota):
     print_header("✨ MENU UTAMA ✨") 
     print(f"  {Style.GREEN}👤 Akun Aktif : {phone_number}{Style.RESET}")
     print(f"  {Style.YELLOW}💰 Sisa Pulsa : Rp {remaining_balance}{Style.RESET}")
-    print(f"  {Style.CYAN}📊 Sisa Kuota : {main_quota}{Style.RESET}")
+    if display_quota:
+        print(f"  {Style.CYAN}📊 Sisa Kuota : {display_quota}{Style.RESET}")
     print(f"  {Style.BLUE}⏳ Masa Aktif : {expired_at_dt}{Style.RESET}")
+    
     print(f"{'-'*55}")
     print(f"  {Style.BOLD}Pilih Menu:{Style.RESET}")
     print(f"  {Style.CYAN}[1]{Style.RESET}. 👤 Login / Ganti Akun")
@@ -32,6 +35,7 @@ def show_main_menu(number, balance, balance_expired_at, main_quota):
     print(f"  {Style.CYAN}[5]{Style.RESET}. 🔍 Beli Paket Berdasarkan Family Code")
     print(f"  {Style.CYAN}[6]{Style.RESET}. 🛒 Beli Paket Bundle (Multi)")
     print(f"  {Style.CYAN}[7]{Style.RESET}. 📚 Bookmark Family Code")
+    print(f"  {Style.CYAN}[8]{Style.RESET}. 🎁 Tukar Poin")
     print(f"  {Style.CYAN}[0]{Style.RESET}. 🔖 Lihat Bookmark Paket")
     print(f"  {Style.CYAN}[99]{Style.RESET}. 🚪 Keluar Aplikasi")
     print(f"{'-'*55}")
@@ -47,12 +51,39 @@ def main():
 
         # Logged in
         if active_user is not None:
-            balance = get_balance(AuthInstance.api_key, active_user["tokens"]["id_token"])
-            balance_remaining = balance.get("remaining")
-            balance_expired_at = balance.get("expired_at")
-            main_quota = get_main_quota(AuthInstance.api_key, active_user["tokens"]["id_token"])
+            try:
+                balance = get_balance(AuthInstance.api_key, active_user["tokens"]["id_token"])
+                if balance is None:
+                    print("Gagal mengambil data saldo.")
+                    pause()
+                    continue
+                balance_remaining = balance.get("remaining", 0)
+                balance_expired_at = balance.get("expired_at", 0)
+            except Exception as e:
+                print(f"Gagal mengambil data saldo: {e}")
+                pause()
+                continue
 
-            show_main_menu(active_user["number"], balance_remaining, balance_expired_at, main_quota)
+            try:
+                quota = get_main_quota(AuthInstance.api_key, active_user["tokens"]["id_token"]) or {}
+                remaining = quota.get("remaining", 0)
+                total = quota.get("total", 0)
+                has_unlimited = quota.get("has_unlimited", False)
+                remaining_gb = remaining / 1e9
+                total_gb = total / 1e9
+                if (total > 0) or has_unlimited:
+                    display_quota = (
+                        f"{remaining_gb:.2f} GB / {total_gb:.2f} GB (Unlimited)"
+                        if has_unlimited
+                        else f"{remaining_gb:.2f} GB / {total_gb:.2f} GB"
+                    )
+                else:
+                    display_quota = None
+            except Exception as e:
+                display_quota = None
+                print(f"Gagal mengambil data kuota: {e}")
+
+            show_main_menu(active_user["number"], balance_remaining, balance_expired_at, display_quota)
 
             choice = input("Pilihan > ")
             if choice == "1":
@@ -74,6 +105,8 @@ def main():
                 show_bundle_menu()
             elif choice == "7":
                 show_family_bookmark_menu()
+            elif choice == "8":
+                run_point_exchange(active_user["tokens"])
             elif choice == "0":
                 show_bookmark_menu()
             elif choice == "99":

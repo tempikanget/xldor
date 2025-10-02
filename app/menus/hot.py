@@ -26,11 +26,21 @@ def show_hot_menu():
 
         hot_packages = response.json()
 
+        width = 55
+        border_top = f"{Style.MAGENTA}╔{'═' * (width - 2)}╗{Style.RESET}"
+        border_bottom = f"{Style.MAGENTA}╚{'═' * (width - 2)}╝{Style.RESET}"
+        line_separator = f"{Style.MAGENTA}╟{'─' * (width - 2)}╢{Style.RESET}"
+
         for idx, p in enumerate(hot_packages):
-            print(f"  {Style.CYAN}[{idx + 1}]{Style.RESET}. {p.get('family_name')} - {p.get('variant_name')} - {p.get('option_name')}")
-            print(f"     - Fam: {p.get('family_code', 'N/A')}, Var: {p.get('variant_code', 'N/A')}, Ord: {p.get('order', 'N/A')}")
-            print(f"     - Enterprise: {'Ya' if p.get('is_enterprise') else 'Tidak'}")
-        
+            package_name = f"{p.get('family_name')} - {p.get('variant_name')} - {p.get('option_name')}"
+            
+            print(border_top)
+            print(f"{Style.MAGENTA}║ {Style.CYAN}[{idx + 1}]{Style.RESET}. {package_name}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print(line_separator)
+            print(f"{Style.MAGENTA}║      Fam: {p.get('family_code', 'N/A')}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print(f"{Style.MAGENTA}║      Enterprise: {'Ya' if p.get('is_enterprise') else 'Tidak'}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print(border_bottom)
+
         print("\n" + ("-"*55))
         print("  🔢  Pilih nomor untuk melihat detail paket")
         print(f"  {Style.CYAN}[00]{Style.RESET}. ↩️  Kembali ke Menu Utama")
@@ -84,14 +94,22 @@ def show_hot_menu2():
 
         hot_packages = response.json()
 
+        width = 55
+        border_top = f"{Style.MAGENTA}╔{'═' * (width - 2)}╗{Style.RESET}"
+        border_bottom = f"{Style.MAGENTA}╚{'═' * (width - 2)}╝{Style.RESET}"
+        line_separator = f"{Style.MAGENTA}╟{'─' * (width - 2)}╢{Style.RESET}"
+
         for idx, p in enumerate(hot_packages):
-            print(f"  {Style.CYAN}[{idx + 1}]{Style.RESET}. {p['name']}\n     Harga: Rp {p['price']}")
+            print(border_top)
+            print(f"{Style.MAGENTA}║ {Style.CYAN}[{idx + 1}]{Style.RESET}. {p['name']}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print(f"{Style.MAGENTA}║      Harga: Rp {p['price']}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
             packages_in_bundle = p.get("packages", [])
             if packages_in_bundle:
-                print("     Isi Paket:")
-                for pkg_item in packages_in_bundle:
-                    print(f"       - Fam: {pkg_item.get('family_code', 'N/A')}, Var: {pkg_item.get('variant_code', 'N/A')}, Ord: {pkg_item.get('order', 'N/A')}")
-            print(f"{'-'*55}")
+                print(line_separator)
+                print(f"{Style.MAGENTA}║      Isi Paket:".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+                for pkg_item in packages_in_bundle: # type: ignore
+                    print(f"{Style.MAGENTA}║        - Fam: {pkg_item.get('family_code', 'N/A')}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print(border_bottom)
 
         
         print("\n" + ("-"*55))
