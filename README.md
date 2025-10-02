@@ -2,12 +2,12 @@
 
 ![banner](bnr.png)
 
-CLI client for a certain Indonesian mobile internet service provider.
+CLI client untuk salah satu penyedia layanan internet seluler Indonesia.
 
-# How to get API Key
-Chat telegram bot [@fykxt_bot](https://t.me/fykxt_bot) with message `/viewkey`. Copy the API key.
+# Cara Mendapatkan API Key
+Buka aplikasi Telegram, lalu chat bot [@fykxt_bot](https://t.me/fykxt_bot) dengan pesan `/viewkey`. Salin API key yang diberikan.
 
-# How to run with TERMUX
+# Cara Menjalankan dengan TERMUX
 1. Update & Upgrade Termux
 ```
 pkg update && pkg upgrade -y
@@ -16,31 +16,30 @@ pkg update && pkg upgrade -y
 ```
 pkg install git -y
 ```
-3. Clone this repo
+3. Clone repository ini
 ```
 git clone https://github.com/baloenk/xldor
 ```
-4. Open the folder
+4. Masuk ke folder
 ```
 cd xldor
 ```
-5. Setup
+5. Jalankan setup
 ```
 bash setup.sh
 ```
-6. Run the script
+6. Jalankan script
 ```
 python main.py
 ```
-7. Input your API key when prompted
+7. Masukkan API Key Anda saat diminta
 
 # Info
 
-## PS for Certain Indonesian mobile internet service provider
+## Catatan untuk penyedia layanan internet seluler Indonesia
 
-Instead of just delisting the package from the app, ensure the user cannot purchase it.
-What's the point of strong client side security when the server don't enforce it?
+Daripada hanya menghapus paket dari aplikasi, sebaiknya pastikan pengguna tidak bisa membeli paket tersebut. Apa gunanya keamanan sisi klien yang kuat jika server tidak menegakkannya?
 
-## Contact
+# Kontak
 
 contact@mashu.lol
