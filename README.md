@@ -22,7 +22,7 @@ git clone https://github.com/baloenk/xldor
 ```
 4. Open the folder
 ```
-cd me-cli
+cd xldor
 ```
 5. Setup
 ```
