@@ -30,7 +30,7 @@ def get_x_signature_exchange_poin(
         raise ValueError(f"Invalid response: {data}")
     return data["signature"]
     
-def fetch_catalog(api_key, id_token, point_balance):
+def fetch_catalog(api_key, id_token):
     path = "gamification/api/v8/loyalties/tiering/rewards-catalog"
     payload = {"is_enterprise": False, "lang": "id"}
     res = send_api_request(api_key, path, payload, id_token)
@@ -41,9 +41,6 @@ def fetch_catalog(api_key, id_token, point_balance):
 
     catalog = []
     points = res["data"]["tiers"][0]["points"]
-
-    # Menampilkan sisa poin pengguna
-    print(f"Sisa Poin Anda: {point_balance} Poin\n")
 
     for i, item in enumerate(points, start=1):
         print(f"{i}. {item['title']} - {item['price']} Poin")
@@ -165,10 +162,8 @@ def run_point_exchange(tokens: dict):
     id_token = tokens.get("id_token")
     api_key = AuthInstance.api_key
     
-    point_balance = get_point_balance(api_key, tokens)
-
     clear_screen()
-    catalog = fetch_catalog(api_key, tokens.get("id_token"), point_balance)
+    catalog = fetch_catalog(api_key, tokens.get("id_token"))
     if not catalog:
         return
 
