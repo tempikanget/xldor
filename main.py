@@ -1,4 +1,5 @@
 import sys
+import concurrent.futures
 import app.config  # Load environment variables first
 from app.menus.util import clear_screen, pause, print_header, Style, ascii_art
 from app.client.engsel import *
@@ -77,25 +78,37 @@ def main():
 
         # Logged in
         if active_user is not None:
+            print("Memuat data, mohon tunggu...", end="\r")
             try:
-                balance = get_balance(AuthInstance.api_key, active_user["tokens"]["id_token"])
+                # Jalankan semua permintaan data secara bersamaan untuk mengurangi waktu tunggu
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    balance_future = executor.submit(get_balance, AuthInstance.api_key, active_user["tokens"]["id_token"])
+                    quota_future = executor.submit(get_main_quota, AuthInstance.api_key, active_user["tokens"]["id_token"])
+                    profile_future = executor.submit(login_info, AuthInstance.api_key, active_user["tokens"])
+
+                    balance = balance_future.result()
+                    quota_info = quota_future.result()
+                    profile_info = profile_future.result()
+
                 if balance is None:
                     print("Gagal mengambil data saldo.")
                     pause()
                     continue
-                
-                quota_info = get_main_quota(AuthInstance.api_key, active_user["tokens"]["id_token"])
+
                 if quota_info is None:
                     print("Gagal mengambil data kuota.")
                     # Set default value to avoid crash
                     quota_info = {"remaining": 0, "total": 0, "has_unlimited": False}
 
-                profile_info = login_info(AuthInstance.api_key, active_user["tokens"]) or {}
+                if profile_info is None:
+                    print("Gagal mengambil data profil.")
+                    profile_info = {}
 
                 balance_remaining = balance.get("remaining", 0)
                 balance_expired_at = balance.get("expired_at", 0)
-            except Exception as e:
-                print(f"Gagal mengambil data saldo: {e}")
+
+            except (Exception, concurrent.futures.CancelledError, concurrent.futures.TimeoutError) as e:
+                print(f"Gagal memuat data: {e}")
                 pause()
                 continue
             
