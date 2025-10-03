@@ -15,6 +15,7 @@ class Style:
     YELLOW = "\033[93m"
     GREEN = "\033[92m"
     BLUE = "\033[94m"
+    RED = "\033[91m"
 
 
 def clear_screen():
@@ -28,11 +29,18 @@ def print_header(title: str):
     border_top = f"{Style.MAGENTA}╔{'═' * (width - 2)}╗{Style.RESET}"
     border_bottom = f"{Style.MAGENTA}╚{'═' * (width - 2)}╝{Style.RESET}"
     
-    title_styled = f"{Style.BOLD}{Style.CYAN}{title}{Style.RESET}"
+    # Strip ANSI codes for accurate length calculation for centering
+    clean_title = strip_ansi(title)
     
+    # Calculate padding for centering
+    padding_total = (width - 2) - len(clean_title)
+    padding_left = padding_total // 2
+    padding_right = padding_total - padding_left
+
     print(border_top)
-    print(f"{Style.MAGENTA}║{Style.RESET} {title_styled.center(width + 8)}{Style.MAGENTA} ║{Style.RESET}")
+    print(f"{Style.MAGENTA}║{' ' * padding_left}{Style.BOLD}{Style.CYAN}{title}{Style.RESET}{' ' * padding_right}║{Style.RESET}")
     print(border_bottom)
+
 
 def pause():
     input("\nPress enter to continue...")
@@ -74,3 +82,20 @@ def display_html(html_text, width=80):
     parser = HTMLToText(width=width)
     parser.feed(html_text)
     return parser.get_text()
+
+def strip_ansi(text):
+    """Removes ANSI escape codes from a string."""
+    ansi_escape = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+    return ansi_escape.sub('', text)
+
+def print_bordered_line(text, width, border_color=Style.MAGENTA):
+    """Prints a line of text within a bordered box, handling ANSI color codes."""
+    # The visible length of the text, without ANSI codes
+    visible_len = len(strip_ansi(text))
+    
+    # Calculate the required padding
+    padding = width - 2 - visible_len
+    
+    # Construct the line
+    line = f"{border_color}║ {text}{' ' * padding}{border_color}║{Style.RESET}"
+    print(line)

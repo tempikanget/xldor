@@ -3,7 +3,7 @@ import requests
 from app.client.engsel import get_family, get_family_v2, get_package_details
 from app.menus.package import show_package_details
 from app.service.auth import AuthInstance
-from app.menus.util import clear_screen, pause, print_header, Style
+from app.menus.util import clear_screen, pause, print_header, Style, print_bordered_line
 from app.client.ewallet import show_multipayment_v2
 from app.client.qris import show_qris_payment_v2
 from app.client.balance import settlement_balance
@@ -35,10 +35,10 @@ def show_hot_menu():
             package_name = f"{p.get('family_name')} - {p.get('variant_name')} - {p.get('option_name')}"
             
             print(border_top)
-            print(f"{Style.MAGENTA}║ {Style.CYAN}[{idx + 1}]{Style.RESET}. {package_name}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print_bordered_line(f"{Style.CYAN}[{idx + 1}]{Style.RESET}. {package_name}", width)
             print(line_separator)
-            print(f"{Style.MAGENTA}║      Fam: {p.get('family_code', 'N/A')}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
-            print(f"{Style.MAGENTA}║      Enterprise: {'Ya' if p.get('is_enterprise') else 'Tidak'}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print_bordered_line(f"     {Style.GREEN}Fam:{Style.RESET} {p.get('family_code', 'N/A')}", width)
+            print_bordered_line(f"     {Style.YELLOW}Enterprise:{Style.RESET} {Style.BLUE + 'Ya' + Style.RESET if p.get('is_enterprise') else Style.RED + 'Tidak' + Style.RESET}", width)
             print(border_bottom)
 
         print("\n" + ("-"*55))
@@ -101,14 +101,14 @@ def show_hot_menu2():
 
         for idx, p in enumerate(hot_packages):
             print(border_top)
-            print(f"{Style.MAGENTA}║ {Style.CYAN}[{idx + 1}]{Style.RESET}. {p['name']}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
-            print(f"{Style.MAGENTA}║      Harga: Rp {p['price']}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+            print_bordered_line(f"{Style.CYAN}[{idx + 1}]{Style.RESET}. {p['name']}", width)
+            print_bordered_line(f"     {Style.YELLOW}Harga:{Style.RESET} Rp {p['price']}", width)
             packages_in_bundle = p.get("packages", [])
             if packages_in_bundle:
                 print(line_separator)
-                print(f"{Style.MAGENTA}║      Isi Paket:".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+                print_bordered_line(f"     {Style.YELLOW}Isi Paket:{Style.RESET}", width)
                 for pkg_item in packages_in_bundle: # type: ignore
-                    print(f"{Style.MAGENTA}║        - Fam: {pkg_item.get('family_code', 'N/A')}".ljust(width + 8) + f"{Style.MAGENTA}║{Style.RESET}")
+                    print_bordered_line(f"       - {Style.GREEN}Fam:{Style.RESET} {pkg_item.get('family_code', 'N/A')}", width)
             print(border_bottom)
 
         

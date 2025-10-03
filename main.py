@@ -12,7 +12,7 @@ from app.menus.hot import show_hot_menu, show_hot_menu2
 from app.menus.points import run_point_exchange
 from app.service.sentry import enter_sentry_mode
 
-def show_main_menu(number, balance, balance_expired_at, display_quota=None):
+def show_main_menu(number, balance, balance_expired_at):
     clear_screen()
     phone_number = number
     remaining_balance = balance
@@ -22,8 +22,6 @@ def show_main_menu(number, balance, balance_expired_at, display_quota=None):
     print_header("✨ MENU UTAMA ✨") 
     print(f"  {Style.GREEN}👤 Akun Aktif : {phone_number}{Style.RESET}")
     print(f"  {Style.YELLOW}💰 Sisa Pulsa : Rp {remaining_balance}{Style.RESET}")
-    if display_quota:
-        print(f"  {Style.CYAN}📊 Sisa Kuota : {display_quota}{Style.RESET}")
     print(f"  {Style.BLUE}⏳ Masa Aktif : {expired_at_dt}{Style.RESET}")
     
     print(f"{'-'*55}")
@@ -64,26 +62,7 @@ def main():
                 pause()
                 continue
 
-            try:
-                quota = get_main_quota(AuthInstance.api_key, active_user["tokens"]["id_token"]) or {}
-                remaining = quota.get("remaining", 0)
-                total = quota.get("total", 0)
-                has_unlimited = quota.get("has_unlimited", False)
-                remaining_gb = remaining / 1e9
-                total_gb = total / 1e9
-                if (total > 0) or has_unlimited:
-                    display_quota = (
-                        f"{remaining_gb:.2f} GB / {total_gb:.2f} GB (Unlimited)"
-                        if has_unlimited
-                        else f"{remaining_gb:.2f} GB / {total_gb:.2f} GB"
-                    )
-                else:
-                    display_quota = None
-            except Exception as e:
-                display_quota = None
-                print(f"Gagal mengambil data kuota: {e}")
-
-            show_main_menu(active_user["number"], balance_remaining, balance_expired_at, display_quota)
+            show_main_menu(active_user["number"], balance_remaining, balance_expired_at)
 
             choice = input("Pilihan > ")
             if choice == "1":

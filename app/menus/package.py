@@ -248,7 +248,101 @@ def show_package_details(api_key, tokens, package_option_code, is_enterprise, op
     pause()
     sys.exit(0)
 
+def handle_bundle_purchase(primary_package, is_enterprise_primary):
+    api_key = AuthInstance.api_key
+    tokens = AuthInstance.get_active_tokens()
+    if not tokens:
+        print("No active user tokens found.")
+        pause()
+        return
+
+    # Details for the "Work & School" package to be bundled
+    ws_family_code = "5d63dddd-4f90-4f4c-8438-2f005c20151f"
+    ws_variant_name = "Work & School"
+    ws_order = 6
+    ws_is_enterprise = False
+
+    print("Mengambil detail paket untuk bundling...")
+
+    # 1. Get details for the primary package
+    primary_package_detail = get_package(api_key, tokens, primary_package["code"])
+    if not primary_package_detail:
+        print("Gagal mengambil detail paket utama.")
+        pause()
+        return
+
+    # 2. Get details for the Work & School package
+    ws_package_detail = get_package_details(api_key, tokens, ws_family_code, ws_variant_name, ws_order, ws_is_enterprise)
+    if not ws_package_detail:
+        print("Gagal mengambil detail paket Work & School.")
+        pause()
+        return
+
+    payment_items = [
+        {
+            "item_code": primary_package_detail["package_option"]["package_option_code"],
+            "product_type": "",
+            "item_price": primary_package_detail["package_option"]["price"],
+            "item_name": f'{primary_package["variant_name"]} {primary_package["option_name"]}'.strip(),
+            "tax": 0,
+            "token_confirmation": primary_package_detail["token_confirmation"],
+        },
+        {
+            "item_code": ws_package_detail["package_option"]["package_option_code"],
+            "product_type": "",
+            "item_price": ws_package_detail["package_option"]["price"],
+            "item_name": f'{ws_package_detail["package_family"]["name"]} {ws_package_detail["package_option"]["name"]}'.strip(),
+            "tax": 0,
+            "token_confirmation": ws_package_detail["token_confirmation"],
+        }
+    ]
+
+    total_price = sum(item['item_price'] for item in payment_items)
+
+    clear_screen()
+    print_header("🛒 Konfirmasi Pembelian Bundling")
+    print("Anda akan membeli paket berikut:")
+    for item in payment_items:
+        print(f"  - {item['item_name']} (Rp {item['item_price']})")
+    print(f"{'-'*55}")
+    print(f"  Harga Total: Rp {total_price}")
+    print(f"{'-'*55}")
+
+    in_payment_menu = True
+    while in_payment_menu:
+        print("\nMetode Pembayaran:")
+        print(f"  {Style.CYAN}[1]{Style.RESET}. 💳 E-Wallet (DANA, GoPay, OVO, ShopeePay)")
+        print(f"  {Style.CYAN}[2]{Style.RESET}. 📱 QRIS")
+        print(f"  {Style.CYAN}[3]{Style.RESET}. 💰 Pulsa")
+        print(f"  {Style.CYAN}[0]{Style.RESET}. ↩️ Batal")
+        print(f"{'-'*25}")
+        
+        input_method = input("Pilih metode (nomor): ")
+        if input_method == "1":
+            show_multipayment_v2(api_key, tokens, payment_items, "BUY_PACKAGE", True)
+            input("Tekan enter untuk kembali...")
+            in_payment_menu = False
+        elif input_method == "2":
+            show_qris_payment_v2(api_key, tokens, payment_items, "BUY_PACKAGE", True)
+            input("Tekan enter untuk kembali...")
+            in_payment_menu = False
+        elif input_method == "3":
+            settlement_balance(api_key, tokens, payment_items, "BUY_PACKAGE", True)
+            input("Tekan enter untuk kembali...")
+            in_payment_menu = False
+        elif input_method == "0":
+            print("Pembelian dibatalkan.")
+            pause()
+            in_payment_menu = False
+        else:
+            print("Metode tidak valid. Silahkan coba lagi.")
+            pause()
+
+    return
+
+
 def get_packages_by_family(
+
     family_code: str,
     is_enterprise: bool | None = None,
     migration_type: str | None = None,
@@ -331,10 +425,17 @@ def get_packages_by_family(
             pause()
             continue
 
-        selected_pkg = next((p for p in packages if p["number"] == int(pkg_choice)), None)
+        try:
+            choice_num = int(pkg_choice)
+            selected_pkg = next((p for p in packages if p["number"] == choice_num), None)
+        except ValueError:
+            print("Input tidak valid. Harap masukkan nomor.")
+            pause()
+            continue
         
         if not selected_pkg:
             print("Paket tidak ditemukan. Silakan masukan nomor yang benar.")
+            pause()
             continue
 
         if return_package_detail:
@@ -348,12 +449,28 @@ def get_packages_by_family(
                 pause()
                 return None, None
         else:
-            is_done = show_package_details(api_key, tokens, selected_pkg["code"], is_enterprise, option_order=selected_pkg["option_order"])
-            if is_done:
-                in_package_menu = False
-                return None
-            else:
-                continue
+            while True:
+                print("\nPilih metode pembayaran:")
+                print(f"  {Style.CYAN}[1]{Style.RESET}. Pembayaran Normal")
+                print(f"  {Style.CYAN}[2]{Style.RESET}. Pembayaran Bundling (Work & School)")
+                print(f"  {Style.CYAN}[00]{Style.RESET}. Kembali")
+                payment_choice = input("Pilihan > ")
+
+                if payment_choice == "1":
+                    is_done = show_package_details(api_key, tokens, selected_pkg["code"], is_enterprise, option_order=selected_pkg["option_order"])
+                    if is_done:
+                        in_package_menu = False
+                    break 
+                elif payment_choice == "2":
+                    handle_bundle_purchase(selected_pkg, is_enterprise)
+                    in_package_menu = False
+                    break
+                elif payment_choice == "00":
+                    break
+                else:
+                    print("Pilihan tidak valid.")
+                    pause()
+            continue
         
     return packages
 
