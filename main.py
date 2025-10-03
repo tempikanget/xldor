@@ -12,16 +12,44 @@ from app.menus.hot import show_hot_menu, show_hot_menu2
 from app.menus.points import run_point_exchange
 from app.service.sentry import enter_sentry_mode
 
-def show_main_menu(number, balance, balance_expired_at):
+def format_quota(quota_bytes):
+    """Formats bytes into a human-readable string (GB, MB, KB)."""
+    if quota_bytes >= 1_000_000_000:
+        return f"{quota_bytes / (1024**3):.2f} GB"
+    elif quota_bytes >= 1_000_000:
+        return f"{quota_bytes / (1024**2):.2f} MB"
+    elif quota_bytes >= 1_000:
+        return f"{quota_bytes / 1024:.2f} KB"
+    return f"{quota_bytes} Bytes"
+
+def show_main_menu(number, balance, balance_expired_at, quota_info, profile_info):
     clear_screen()
     phone_number = number
     remaining_balance = balance
     expired_at = balance_expired_at
     expired_at_dt = datetime.fromtimestamp(expired_at).strftime("%Y-%m-%d %H:%M:%S")
 
+    quota_remaining_str = "N/A"
+    if quota_info:
+        remaining = quota_info.get("remaining", 0)
+        total = quota_info.get("total", 0)
+        
+        # Format sisa dan total kuota, mirip dengan main(example).py
+        remaining_formatted = format_quota(remaining)
+        total_formatted = format_quota(total)
+        
+        quota_remaining_str = f"{remaining_formatted} / {total_formatted}"
+        if quota_info.get("has_unlimited"):
+            quota_remaining_str += " (Unlimited)"
+
+    profile_name = profile_info.get("profile", {}).get("full_name", "Pengguna")
+
     print_header("✨ MENU UTAMA ✨") 
-    print(f"  {Style.GREEN}👤 Akun Aktif : {phone_number}{Style.RESET}")
+    print(f"  {Style.GREEN}👤 Akun       : {profile_name} ({phone_number}){Style.RESET}")
+    print(f"{'-'*55}")
     print(f"  {Style.YELLOW}💰 Sisa Pulsa : Rp {remaining_balance}{Style.RESET}")
+    print(f"  {Style.MAGENTA}📊 Sisa Kuota : {quota_remaining_str}{Style.RESET}")
+    
     print(f"  {Style.BLUE}⏳ Masa Aktif : {expired_at_dt}{Style.RESET}")
     
     print(f"{'-'*55}")
@@ -55,14 +83,23 @@ def main():
                     print("Gagal mengambil data saldo.")
                     pause()
                     continue
+                
+                quota_info = get_main_quota(AuthInstance.api_key, active_user["tokens"]["id_token"])
+                if quota_info is None:
+                    print("Gagal mengambil data kuota.")
+                    # Set default value to avoid crash
+                    quota_info = {"remaining": 0, "total": 0, "has_unlimited": False}
+
+                profile_info = login_info(AuthInstance.api_key, active_user["tokens"]) or {}
+
                 balance_remaining = balance.get("remaining", 0)
                 balance_expired_at = balance.get("expired_at", 0)
             except Exception as e:
                 print(f"Gagal mengambil data saldo: {e}")
                 pause()
                 continue
-
-            show_main_menu(active_user["number"], balance_remaining, balance_expired_at)
+            
+            show_main_menu(active_user["number"], balance_remaining, balance_expired_at, quota_info, profile_info)
 
             choice = input("Pilihan > ")
             if choice == "1":

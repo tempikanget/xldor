@@ -251,49 +251,44 @@ def get_main_quota(api_key: str, id_token: str) -> dict:
     """
     Fetches all data quotas, aggregates them, and returns a dictionary.
     """
-    path = "api/v8/packages/quota-details"
+    path = "api/v8/packages/quota-summary"
     payload = {
         "is_enterprise": False,
-        "lang": "en",
-        "family_member_id": ""
+        "lang": "en"
     }
 
-    res = send_api_request(api_key, path, payload, id_token, "POST")
-    if res.get("status") != "SUCCESS":
-        return {"error": "Gagal memuat kuota"}
+    try:
+        res = send_api_request(api_key, path, payload, id_token, "POST")
+    except Exception as e:
+        print("Error sending API request for quota:", e)
+        return None
 
-    quotas = res.get("data", {}).get("quotas", [])
-    if not quotas:
-        return {"remaining": 0, "total": 0, "has_unlimited": False}
-
-    total_remaining = 0
-    total_quota = 0
-    has_unlimited = False
-
-    for quota in quotas:
-        if quota.get("data_type") == "DATA":
-            total_remaining += quota.get("remaining", 0)
-            total_quota += quota.get("total", 0)
-            if quota.get("is_unlimited"):
-                has_unlimited = True
-
-    return {
-        "remaining": total_remaining,
-        "total": total_quota,
-        "has_unlimited": has_unlimited
-    }
+    if isinstance(res, dict) and "data" in res:
+        quota = res["data"].get("quota", {}).get("data")
+        if quota:
+            return {
+                "remaining": quota.get("remaining", 0),
+                "total": quota.get("total", 0),
+                "has_unlimited": quota.get("has_unlimited", False)
+            }
+        else:
+            # No quota data in a successful response, return 0
+            return {"remaining": 0, "total": 0, "has_unlimited": False}
+    else:
+        print("Error getting quota:", res.get("error", "Unknown error") if isinstance(res, dict) else res)
+        return None
 
 def get_point_balance(api_key: str, tokens: dict) -> int:
     """
     Fetches the user's point balance from the login info endpoint.
     """
     path = "api/v8/auth/login"
+    # Endpoint ini memerlukan access_token untuk mengembalikan data loyalty/poin.
     payload = {
         "access_token": tokens.get("access_token"),
         "is_enterprise": False,
         "lang": "en"
     }
-    
     res = send_api_request(api_key, path, payload, tokens.get("id_token"), "POST")
     
     if res.get("status") != "SUCCESS" or "data" not in res:

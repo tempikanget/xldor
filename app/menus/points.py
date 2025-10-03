@@ -168,7 +168,7 @@ def run_point_exchange(tokens: dict):
     point_balance = get_point_balance(api_key, tokens)
 
     clear_screen()
-    catalog = fetch_catalog(api_key, id_token, point_balance)
+    catalog = fetch_catalog(api_key, tokens.get("id_token"), point_balance)
     if not catalog:
         return
 
@@ -182,7 +182,7 @@ def run_point_exchange(tokens: dict):
         print("Pilihan tidak valid.")
         return
 
-    detail = fetch_detail(api_key, id_token, item["code"])
+    detail = fetch_detail(api_key, tokens.get("id_token"), item["code"])
     if not detail:
         return
 
