@@ -1,6 +1,7 @@
 import json
 from app.client.engsel import segments
 from app.menus.package import show_package_details
+from app.service.auth import AuthInstance
 from app.menus.util import clear_screen, pause
 
 
@@ -78,7 +79,8 @@ def show_special_for_you_menu(tokens, special_packages):
             print(f"Kamu memilih paket: {selected_pkg['name']}")
             pause()
             # panggil show_package_details dengan is_enterprise=False
-            show_package_details(tokens, selected_pkg["kode_paket"], False)
+            api_key = AuthInstance.api_key
+            show_package_details(api_key, tokens, selected_pkg["kode_paket"], False)
         else:
             print("Pilihan tidak valid.")
             pause()

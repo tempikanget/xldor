@@ -54,11 +54,13 @@ def show_main_menu(number, balance, balance_expired_at, quota_info, profile_info
     print(f"  {Style.GREEN}⭐ Tier       : {tiers.get('tier_name', '-')} ({tiers.get('current_point', 0)} poin){Style.RESET}")
     print(f"{'-'*55}")
 
+    print(f"  {Style.BOLD}📢 Notifikasi:{Style.RESET}")
     if notifications:
-        print(f"  {Style.BOLD}📢 Notifikasi:{Style.RESET}")
         notif = notifications[0]
         print(f"  - {notif.get('title', '')}: {notif.get('body', '')}")
-        print(f"{'-'*55}")
+    
+    print(f"  {Style.CYAN}[T]{Style.YELLOW} 🔥Unlimited Turbo Tiktok New Method || {Style.GREEN}💰Rp.30000{Style.RESET}")
+    print(f"{'-'*55}")
 
     if special_packages:
         def score(pkg):
@@ -177,21 +179,16 @@ def main():
             elif choice == "99":
                 print("Exiting the application.")
                 sys.exit(0)
-            elif choice == "t":
-                res = get_package(
-                    AuthInstance.api_key,
-                    active_user["tokens"],
-                    ""
-                )
-                print(json.dumps(res, indent=2))
-                input("Press Enter to continue...")
+            elif choice.lower() == "t":
+                from app.menus.autobuy_bundle import execute_unlimited_tiktok_autobuy
+                execute_unlimited_tiktok_autobuy()
             elif choice.lower() == "s":
                 special_packages = segments_data.get("special_packages")
                 if special_packages:
                     show_special_for_you_menu(active_user["tokens"], special_packages)
                 else:
                     print("Tidak ada paket Special For You yang tersedia saat ini.")
-                enter_sentry_mode()
+                    pause()
             else:
                 print("Invalid choice. Please try again.")
                 pause()
