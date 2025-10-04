@@ -93,8 +93,6 @@ def execute_autobuy(bundle_data, payment_method):
         pause()
         return
 
-    print(f"Memproses pembelian bundle '{bundle_data['name']}'...")
-    
     # 1. Ambil detail setiap paket untuk membuat payment_items
     payment_items = []
     total_bundle_price = 0
@@ -106,6 +104,7 @@ def execute_autobuy(bundle_data, payment_method):
             package.get("variant_code") or package.get("variant_name"),
             package.get("order"),
             package.get("is_enterprise"),
+            silent=True
         )
         if not package_detail:
             print(f"\n{Style.RED}Gagal mengambil detail untuk paket: {package.get('option_name')}{Style.RESET}")

@@ -336,10 +336,10 @@ def get_family_v2(
     tokens: dict,
     family_code: str,
     is_enterprise: bool | None = None,
-    migration_type: str | None = None
+    migration_type: str | None = None,
+    silent: bool = False
 ) -> dict:
     print("Fetching package family...")
-    
     is_enterprise_list = [
         False,
         True
@@ -370,8 +370,8 @@ def get_family_v2(
         for ie in is_enterprise_list:
             if family_data is not None:
                 break
-        
-            print(f"Trying is_enterprise={ie}, migration_type={mt}...")
+            # if not silent:
+            #     print(f"Trying is_enterprise={ie}, migration_type={mt}...")
 
             payload_dict = {
                 "is_show_tagging_tab": True,
@@ -395,8 +395,9 @@ def get_family_v2(
             
             family_name = res["data"]["package_family"].get("name", "")
             if family_name != "":
-                family_data = res["data"]
-                print(f"Success with is_enterprise={ie}, migration_type={mt}. Family name: {family_name}")
+                family_data = res["data"] # type: ignore
+                # if not silent:
+                #     print(f"Success with is_enterprise={ie}, migration_type={mt}. Family name: {family_name}")
 
 
     if family_data is None:
@@ -432,11 +433,11 @@ def get_package(
     tokens: dict,
     package_option_code: str,
     package_family_code: str = "",
-    package_variant_code: str = ""
+    package_variant_code: str = "",
+    silent: bool = False
     ) -> dict:
     path = "api/v8/xl-stores/options/detail"
-    
-    raw_payload = {
+    raw_payload = { # type: ignore
         "is_transaction_routine": False,
         "migration_type": "NONE",
         "package_family_code": package_family_code,
@@ -732,9 +733,10 @@ def get_package_details(
     variant_code: str,
     option_order: int | None = None,
     is_enterprise: bool | None = None,
-    migration_type: str | None = None
+    migration_type: str | None = None,
+    silent: bool = False
 ) -> dict | None:
-    family_data = get_family_v2(api_key, tokens, family_code, is_enterprise, migration_type)
+    family_data = get_family_v2(api_key, tokens, family_code, is_enterprise, migration_type, silent=silent)
     if not family_data:
         print(f"Gagal mengambil data family untuk {family_code}.")
         return None
@@ -747,12 +749,14 @@ def get_package_details(
     is_valid_uuid = isinstance(variant_code, str) and len(variant_code) == 36 and '-' in variant_code
     if not is_valid_uuid:
         variant_name_to_find = variant_code # Asumsikan variant_code berisi variant_name
-        print(f"Mencari variant_code untuk nama: '{variant_name_to_find}'...")
+        # if not silent:
+        #     print(f"Mencari variant_code untuk nama: '{variant_name_to_find}'...")
         variant_code_found = None
         for variant in family_data.get("package_variants", []):
             if variant.get("name") == variant_name_to_find:
                 variant_code_found = variant.get("package_variant_code")
-                print(f"Ditemukan variant_code: {variant_code_found}")
+                # if not silent:
+                #     print(f"Ditemukan variant_code: {variant_code_found}")
                 break
         if variant_code_found:
             variant_code = variant_code_found
@@ -776,7 +780,7 @@ def get_package_details(
         print("Gagal menemukan opsi paket yang sesuai.")
         return None
         
-    package_details_data = get_package(api_key, tokens, option_code)
+    package_details_data = get_package(api_key, tokens, option_code, silent=silent)
     if not package_details_data:
         print("Gagal mengambil detail paket.")
         return None
