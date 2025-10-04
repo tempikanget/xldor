@@ -182,9 +182,7 @@ def settlement_balance(
             print(f"Error: {decrypted_body}")
             return None
         
-        print(f"Purchase result:\n{json.dumps(decrypted_body, indent=2)}")
-    
-        input("Press Enter to continue...")
+        return decrypted_body
     except Exception as e:
         print("[decrypt err]", e)
         return resp.text
