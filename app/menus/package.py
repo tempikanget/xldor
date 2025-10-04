@@ -127,9 +127,10 @@ def show_package_details(api_key, tokens, package_option_code, is_enterprise, op
     in_package_detail_menu = True
     while in_package_detail_menu:
         print("\nOpsi Pembelian:")
-        print(f"  {Style.CYAN}[1]{Style.RESET}. 💰 Beli dengan Pulsa")
-        print(f"  {Style.CYAN}[2]{Style.RESET}. 💳 Beli dengan E-Wallet")
-        print(f"  {Style.CYAN}[3]{Style.RESET}. 📱 Bayar dengan QRIS")
+        print(f"  {Style.CYAN}[1]{Style.RESET}. 💰 Pulsa")
+        print(f"  {Style.CYAN}[2]{Style.RESET}. 💳 ShopeePay")
+        print(f"  {Style.CYAN}[3]{Style.RESET}. 💳 E-Wallet (Lainnya)")
+        print(f"  {Style.CYAN}[4]{Style.RESET}. 📱 QRIS")
         
         # Sometimes payment_for is empty, so we set default to BUY_PACKAGE
         if payment_for == "":
@@ -137,7 +138,7 @@ def show_package_details(api_key, tokens, package_option_code, is_enterprise, op
         
         if payment_for == "REDEEM_VOUCHER":
             print(f"  {Style.CYAN}[4]{Style.RESET}. 🎁 Ambil sebagai bonus (jika tersedia)")
-        
+
         if option_order != -1:
             print(f"  {Style.CYAN}[0]{Style.RESET}. 🔖 Tambah ke Bookmark")
         print(f"  {Style.CYAN}[00]{Style.RESET}. ↩️  Kembali ke daftar paket")
@@ -176,26 +177,37 @@ def show_package_details(api_key, tokens, package_option_code, is_enterprise, op
             input("Silahkan cek hasil pembelian di aplikasi MyXL. Tekan Enter untuk kembali.")
             return True
         elif choice == '2':
-            # show_multipayment(api_key, tokens, package_option_code, token_confirmation, price, item_name)
             show_multipayment_v2(
                 api_key,
                 tokens,
                 payment_items,
                 payment_for,
                 True,
-                amount_used="first"
+                amount_used="first",
+                force_payment_method="SHOPEEPAY"
             )
             input("Silahkan lakukan pembayaran & cek hasil pembelian di aplikasi MyXL. Tekan Enter untuk kembali.")
             return True
         elif choice == '3':
-            # show_qris_payment(api_key, tokens, package_option_code, token_confirmation, price, item_name)
+            show_multipayment_v2(
+                api_key,
+                tokens,
+                payment_items,
+                payment_for,
+                True,
+                amount_used="first",
+                exclude_shopeepay=True
+            )
+            input("Silahkan lakukan pembayaran & cek hasil pembelian di aplikasi MyXL. Tekan Enter untuk kembali.")
+            return True
+        elif choice == '4':
             show_qris_payment_v2(
                 api_key,
                 tokens,
                 payment_items,
                 payment_for,
                 True,
-                amount_used="first"
+                amount_used="first",
             )
             input("Silahkan lakukan pembayaran & cek hasil pembelian di aplikasi MyXL. Tekan Enter untuk kembali.")
             return True
@@ -232,7 +244,7 @@ def show_package_details(api_key, tokens, package_option_code, is_enterprise, op
             )
             input("Silahkan lakukan pembayaran & cek hasil pembelian di aplikasi MyXL. Tekan Enter untuk kembali.")
             return True
-        elif choice == '4':
+        elif choice == '5' and payment_for == "REDEEM_VOUCHER":
             settlement_bounty(
                 api_key=api_key,
                 tokens=tokens,

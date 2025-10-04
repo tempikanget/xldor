@@ -1,6 +1,7 @@
 import sys
 import concurrent.futures
 import app.config  # Load environment variables first
+from app.config import HIDDEN_MENU_PIN
 from app.menus.util import clear_screen, pause, print_header, Style, ascii_art
 from app.client.engsel import *
 from app.service.auth import AuthInstance
@@ -10,6 +11,7 @@ from app.menus.package import fetch_my_packages, get_packages_by_family, show_pa
 from app.menus.family_bookmark import show_family_bookmark_menu
 from app.menus.bundle import show_bundle_menu
 from app.menus.hot import show_hot_menu, show_hot_menu2
+from app.menus.autobuy_bundle import show_autobuy_bundle_menu
 from app.menus.points import run_point_exchange
 from app.service.sentry import enter_sentry_mode
 
@@ -61,9 +63,10 @@ def show_main_menu(number, balance, balance_expired_at, quota_info, profile_info
     print(f"  {Style.CYAN}[4]{Style.RESET}. ♨️ Beli Paket Hot Promo 2 (Bundling)")
     print(f"  {Style.CYAN}[5]{Style.RESET}. 🔍 Beli Paket Berdasarkan Family Code")
     print(f"  {Style.CYAN}[6]{Style.RESET}. 🛒 Beli Paket Bundle (Multi)")
-    print(f"  {Style.CYAN}[7]{Style.RESET}. 📚 Bookmark Family Code")
-    print(f"  {Style.CYAN}[8]{Style.RESET}. 🎁 Tukar Poin")
-    print(f"  {Style.CYAN}[0]{Style.RESET}. 🔖 Lihat Bookmark Paket")
+    print(f"  {Style.CYAN}[7]{Style.RESET}. 🔖 Bookmark Paket")
+    print(f"  {Style.CYAN}[8]{Style.RESET}. 📚 Bookmark Family Code")
+    print(f"  {Style.CYAN}[0]{Style.RESET}. 🎁 Tukar Poin")
+    print(f"  {Style.CYAN}[88]{Style.RESET}. 🕵️ Hidden Menu")
     print(f"  {Style.CYAN}[99]{Style.RESET}. 🚪 Keluar Aplikasi")
     print(f"{'-'*55}")
 
@@ -133,11 +136,19 @@ def main():
             elif choice == "6":
                 show_bundle_menu()
             elif choice == "7":
-                show_family_bookmark_menu()
-            elif choice == "8":
-                run_point_exchange(active_user["tokens"])
-            elif choice == "0":
                 show_bookmark_menu()
+            elif choice == "8":
+                show_family_bookmark_menu()
+            elif choice == "0":
+                run_point_exchange(active_user["tokens"])
+            elif choice == "88":
+                pin_input = input("Masukkan PIN untuk mengakses menu tersembunyi: ")
+                if pin_input == HIDDEN_MENU_PIN:
+                    show_autobuy_bundle_menu()
+                else:
+                    print(f"\n{Style.RED}PIN salah. Akses ditolak.{Style.RESET}")
+                    pause()
+                continue
             elif choice == "99":
                 print("Exiting the application.")
                 sys.exit(0)

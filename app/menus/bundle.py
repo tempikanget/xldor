@@ -219,9 +219,10 @@ def show_bundle_menu():
             print(f"{'-'*55}")
 
             print("\nMetode Pembayaran:")
-            print(f"  {Style.CYAN}[1]{Style.RESET}. 💳 E-Wallet (DANA, GoPay, OVO, ShopeePay)")
-            print(f"  {Style.CYAN}[2]{Style.RESET}. 📱 QRIS")
-            print(f"  {Style.CYAN}[3]{Style.RESET}. 💰 Pulsa")
+            print(f"  {Style.CYAN}[1]{Style.RESET}. 💳 E-Wallet (DANA, GoPay, OVO)")
+            print(f"  {Style.CYAN}[2]{Style.RESET}. 💳 ShopeePay")
+            print(f"  {Style.CYAN}[3]{Style.RESET}. 📱 QRIS")
+            print(f"  {Style.CYAN}[4]{Style.RESET}. 💰 Pulsa")
             print(f"  {Style.CYAN}[0]{Style.RESET}. ↩️ Batal")
             print(f"{'-'*25}")
             
@@ -229,10 +230,12 @@ def show_bundle_menu():
             payment_for = "BUY_PACKAGE" # Asumsi
 
             if method_choice == '1':
-                show_multipayment_v2(api_key, tokens, cart_items, payment_for, True)
+                show_multipayment_v2(api_key, tokens, cart_items, payment_for, True, exclude_shopeepay=True)
             elif method_choice == '2':
-                show_qris_payment_v2(api_key, tokens, cart_items, payment_for, True)
+                show_multipayment_v2(api_key, tokens, cart_items, payment_for, True, force_payment_method="SHOPEEPAY")
             elif method_choice == '3':
+                show_qris_payment_v2(api_key, tokens, cart_items, payment_for, True)
+            elif method_choice == '4':
                 settlement_balance(api_key, tokens, cart_items, payment_for, True)
             else:
                 continue

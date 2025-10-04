@@ -221,7 +221,8 @@ def settlement_multipayment_v2(
     payment_method,
     payment_for,
     ask_overwrite: bool,
-    amount_used: str = ""
+    amount_used: str = "",
+    amount_overwrite: int | None = None
 ):
     token_confirmation = items[0]["token_confirmation"]
     payment_targets = ""
@@ -230,10 +231,14 @@ def settlement_multipayment_v2(
             payment_targets += ";"
         payment_targets += item["item_code"]
         
-    amount_int = items[-1]["item_price"]
+    # Default amount is the sum of all items
+    amount_int = sum(item.get("item_price", 0) for item in items)
     if amount_used == "first":
         amount_int = items[0]["item_price"]
-    
+
+    if amount_overwrite is not None:
+        amount_int = amount_overwrite
+
     # Overwrite
     if ask_overwrite:
         print(f"Total amount is {amount_int}.\nEnter new amount if you need to overwrite.")
@@ -351,10 +356,39 @@ def settlement_multipayment_v2(
     
     try:
         decrypted_body = decrypt_xdata(api_key, json.loads(resp.text))
+        if decrypted_body.get("status") != "SUCCESS":
+            # Cek jika ada error amount tidak valid dan coba lagi
+            if 'message' in decrypted_body and 'Payment amount is not valid' in decrypted_body['message']:
+                print("Initial settlement failed due to invalid amount. Retrying with valid amount from server...")
+                try:
+                    # Ekstrak valid amount dari pesan error
+                    valid_amount_str = decrypted_body['message'].split('is ')[-1]
+                    valid_amount = int(valid_amount_str)
+                    print(f"Retrying with amount: {valid_amount}")
+
+                    # Panggil kembali fungsi ini dengan amount_overwrite
+                    return settlement_multipayment_v2(
+                        api_key,
+                        tokens,
+                        items,
+                        wallet_number,
+                        payment_method,
+                        payment_for,
+                        ask_overwrite=False, # Jangan tanya lagi
+                        amount_used=amount_used,
+                        amount_overwrite=valid_amount
+                    )
+                except (ValueError, IndexError) as e:
+                    print(f"Failed to parse valid amount from error message: {e}")
+                    print(f"Original Error: {decrypted_body}")
+                    return None
+            else:
+                print("Failed to initiate settlement.")
+                print(f"Error: {decrypted_body}")
+                return None
         return decrypted_body
     except Exception as e:
         print("[decrypt err]", e)
-        return resp.text
 
 def settlement_multipayment_debug(
     api_key: str,
@@ -531,13 +565,32 @@ def show_multipayment_v2(
     payment_for,
     ask_overwrite: bool,
     amount_used: str = "",
+    force_payment_method: str | None = None,
+    exclude_shopeepay: bool = False
 ):
+    if force_payment_method:
+        settlement_response = settlement_multipayment_v2(
+            api_key, tokens, items, "", force_payment_method, payment_for, ask_overwrite, amount_used
+        )
+        if not settlement_response or settlement_response.get("status") != "SUCCESS":
+            print("Failed to initiate settlement.")
+            print(f"Error: {settlement_response}")
+            return
+        
+        deeplink = settlement_response["data"].get("deeplink", "")
+        if deeplink:
+            print(f"Silahkan selesaikan pembayaran melalui link berikut:\n{deeplink}")
+        return
+
     choosing_payment_method = True
     while choosing_payment_method:
         payment_method = ""
         wallet_number = ""
         print("Pilihan E-Wallet:")
-        print("1. DANA\n2. ShopeePay\n3. GoPay\n4. OVO")
+        print("1. DANA\n2. GoPay\n3. OVO")
+        if not exclude_shopeepay:
+            print("4. ShopeePay")
+
         choice = input("Pilih metode pembayaran: ")
         if choice == "1":
             payment_method = "DANA"
@@ -548,18 +601,18 @@ def show_multipayment_v2(
                 continue
             choosing_payment_method = False
         elif choice == "2":
-            payment_method = "SHOPEEPAY"
-            choosing_payment_method = False
-        elif choice == "3":
             payment_method = "GOPAY"
             choosing_payment_method = False
-        elif choice == "4":
+        elif choice == "3":
             payment_method = "OVO"
             wallet_number = input("Masukkan nomor OVO (contoh: 08123456789): ")
             # Validate number format
             if not wallet_number.startswith("08") or not wallet_number.isdigit() or len(wallet_number) < 10 or len(wallet_number) > 13:
                 print("Nomor OVO tidak valid. Pastikan nomor diawali dengan '08' dan memiliki panjang yang benar.")
                 continue
+            choosing_payment_method = False
+        elif choice == "4" and not exclude_shopeepay:
+            payment_method = "SHOPEEPAY"
             choosing_payment_method = False
         else:
             print("Pilihan tidak valid.")
@@ -577,7 +630,7 @@ def show_multipayment_v2(
     )
     
     # print(f"Settlement response: {json.dumps(settlement_response, indent=2)}")
-    if settlement_response["status"] != "SUCCESS":
+    if not settlement_response or settlement_response.get("status") != "SUCCESS":
         print("Failed to initiate settlement.")
         print(f"Error: {settlement_response}")
         return

@@ -743,22 +743,23 @@ def get_package_details(
     if is_enterprise is None:
         is_enterprise = family_data.get("package_family", {}).get("is_enterprise", False)
 
-    # Jika variant_code adalah nama (string) bukan UUID, cari UUID-nya
-    # Simple UUID check: panjang 36 dan mengandung tanda hubung
-    is_uuid = isinstance(variant_code, str) and len(variant_code) == 36 and '-' in variant_code
-    if not is_uuid:
-        found_code = None
+    # Jika variant_code tidak ada atau bukan UUID, coba cari berdasarkan variant_name
+    is_valid_uuid = isinstance(variant_code, str) and len(variant_code) == 36 and '-' in variant_code
+    if not is_valid_uuid:
+        variant_name_to_find = variant_code # Asumsikan variant_code berisi variant_name
+        print(f"Mencari variant_code untuk nama: '{variant_name_to_find}'...")
+        variant_code_found = None
         for variant in family_data.get("package_variants", []):
-            if variant.get("name") == variant_code:
-                found_code = variant.get("package_variant_code")
+            if variant.get("name") == variant_name_to_find:
+                variant_code_found = variant.get("package_variant_code")
+                print(f"Ditemukan variant_code: {variant_code_found}")
                 break
-        if found_code:
-            variant_code = found_code
+        if variant_code_found:
+            variant_code = variant_code_found
         else:
-            print(f"Gagal menemukan variant_code untuk nama: {variant_code}")
+            print(f"Gagal menemukan variant_code untuk nama: '{variant_name_to_find}'")
             return None
 
-    package_options = []
     
     package_variants = family_data["package_variants"]
     option_code = None
@@ -766,10 +767,9 @@ def get_package_details(
         if variant["package_variant_code"] == variant_code:
             selected_variant = variant
             package_options = selected_variant.get("package_options", [])
-            for option in package_options:
-                if option["order"] == option_order:
-                    selected_option = option
-                    option_code = selected_option["package_option_code"]
+            for opt in package_options:
+                if opt.get("order") == option_order:
+                    option_code = opt.get("package_option_code")
                     break
 
     if option_code is None:
@@ -782,3 +782,111 @@ def get_package_details(
         return None
     
     return package_details_data
+
+def ewallet_charge(
+    api_key: str,
+    tokens: dict,
+    packages: list,
+    amount: int,
+    payment_method: str, # e.g., "SHOPEEPAY"
+    is_enterprise: bool = False
+) -> dict:
+    """
+    Initiates a bundle purchase using an e-wallet. This is a simplified version
+    that doesn't go through the full settlement process, but directly gets a payment URL.
+    """
+    path = "payments/api/v8/payment-methods-option"
+    
+    # Menggunakan package_option_code dari item pertama sebagai payment_target
+    # Ini adalah asumsi berdasarkan perilaku aplikasi, mungkin perlu penyesuaian
+    if not packages:
+        print("Daftar paket tidak boleh kosong.")
+        return None
+    
+    print("Mengambil detail untuk setiap paket dalam bundle...")
+    items_for_payment = []
+    token_confirmations = []
+
+    for pkg in packages:
+        # Ambil detail paket untuk mendapatkan package_option_code dan token_confirmation yang valid
+        package_detail = get_package_details(
+            api_key,
+            tokens,
+            pkg.get("family_code"),
+            pkg.get("variant_code") or pkg.get("variant_name"), # Support variant_code or variant_name
+            pkg.get("order"),
+            pkg.get("is_enterprise")
+        )
+
+        if not package_detail:
+            print(f"Gagal mengambil detail untuk paket: {pkg.get('family_name')} - {pkg.get('option_name')}")
+            return {"error": "Failed to get package details", "package": pkg}
+
+        option = package_detail.get("package_option", {})
+        item_code = option.get("package_option_code")
+        item_name = f"{package_detail.get('package_detail_variant', {}).get('name', '')} {option.get('name', '')}".strip()
+
+        items_for_payment.append({
+            "item_code": item_code,
+            "item_name": item_name,
+            "item_price": option.get("price", 0),
+            "product_type": "",
+            "tax": 0
+        })
+        token_confirmations.append(package_detail.get("token_confirmation", ""))
+
+    # Menggunakan item_code dari paket pertama sebagai payment_target
+    # dan gabungan token_confirmation
+    payment_target = items_for_payment[0]["item_code"] if items_for_payment else None
+    token_confirmation = ";".join(filter(None, token_confirmations))
+
+    payload = {
+        "payment_type": "PURCHASE",
+        "is_enterprise": is_enterprise,
+        "payment_target": payment_target,
+        "lang": "en",
+        "is_referral": False,
+        "token_confirmation": token_confirmation,
+        "items": items_for_payment,
+        "total_amount": amount,
+        "payment_method": payment_method,
+        "is_myxl_wallet": False,
+        "is_use_point": False,
+        "total_discount": 0,
+        "total_fee": 0,
+        "coupon": "",
+        "payment_for": "BUY_PACKAGE",
+        "additional_data": {
+            "is_family_plan": False,
+            "is_akrab_m2m": False,
+            "balance_type": "PREPAID_BALANCE",
+            "has_bonus": False,
+        },
+        "encrypted_payment_token": build_encrypted_field(urlsafe_b64=True),
+        "encrypted_authentication_id": build_encrypted_field(urlsafe_b64=True),
+    }
+
+    print("Memulai pembayaran E-Wallet...")
+    res = send_api_request(api_key, path, payload, tokens["id_token"], "POST")
+    
+    if res.get("status") != "SUCCESS":
+        print("Gagal memulai pembayaran E-Wallet.")
+        print(json.dumps(res, indent=2))
+        return None
+        
+    return res.get("data")
+
+def get_payment_status(api_key: str, tokens: dict, order_id: str) -> dict:
+    """
+    Checks the status of a payment transaction.
+    """
+    path = "payments/api/v8/payment-status"
+    payload = {
+        "order_id": order_id,
+        "lang": "en"
+    }
+    
+    print(f"Mengecek status pembayaran untuk Order ID: {order_id}...")
+    res = send_api_request(api_key, path, payload, tokens["id_token"], "POST")
+    
+    return res

@@ -1,4 +1,4 @@
-from dotenv import load_dotenv
+import os
 
-# Load environment variables from .env file
-load_dotenv()
+# PIN untuk mengakses menu tersembunyi.
+HIDDEN_MENU_PIN = os.environ.get("HIDDEN_MENU_PIN", "1234")

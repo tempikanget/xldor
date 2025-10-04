@@ -16,7 +16,8 @@ def settlement_qris_v2(
     items: list[PaymentItem],
     payment_for: str,
     ask_overwrite: bool,
-    amount_used: str = ""
+    amount_used: str = "",
+    amount_overwrite: int | None = None
 ):  
     token_confirmation = items[0]["token_confirmation"]
     payment_targets = ""
@@ -25,12 +26,15 @@ def settlement_qris_v2(
             payment_targets += ";"
         payment_targets += item["item_code"]
     
-    amount_int = items[-1]["item_price"]
+    # Default amount is the sum of all items
+    amount_int = sum(item.get("item_price", 0) for item in items)
     if amount_used == "first":
         amount_int = items[0]["item_price"]
-    
-    # Overwrite
-    if ask_overwrite:
+
+    if amount_overwrite is not None:
+        amount_int = amount_overwrite
+    elif ask_overwrite:
+        # Overwrite
         print(f"Total amount is {amount_int}.\nEnter new amount if you need to overwrite.")
         amount_str = input("Press enter to ignore & use default amount: ")
         if amount_str != "":
@@ -38,11 +42,9 @@ def settlement_qris_v2(
                 amount_int = int(amount_str)
             except ValueError:
                 print("Invalid overwrite input, using original price.")
-                # return None
+                return None
     
     intercept_page(api_key, tokens, items[0]["item_code"], False)
-    
-    # Get payment methods
     payment_path = "payments/api/v8/payment-methods-option"
     payment_payload = {
         "payment_type": "PURCHASE",
@@ -140,20 +142,45 @@ def settlement_qris_v2(
     url = f"{BASE_API_URL}/{path}"
     print("Sending settlement request...")
     resp = requests.post(url, headers=headers, data=json.dumps(body), timeout=30)
-    
+
     try:
         decrypted_body = decrypt_xdata(api_key, json.loads(resp.text))
         if decrypted_body["status"] != "SUCCESS":
-            print("Failed to initiate settlement.")
-            print(f"Error: {decrypted_body}")
-            return None
-        
-        transaction_id = decrypted_body["data"]["transaction_code"]
-        
-        return transaction_id
+            # Cek jika ada error amount tidak valid dan coba lagi
+            if 'message' in decrypted_body and 'Payment amount is not valid' in decrypted_body['message']:
+                print("Initial settlement failed due to invalid amount. Retrying with valid amount from server...")
+                try:
+                    # Ekstrak valid amount dari pesan error
+                    valid_amount_str = decrypted_body['message'].split('is ')[-1]
+                    valid_amount = int(valid_amount_str)
+                    print(f"Retrying with amount: {valid_amount}")
+
+                    # Panggil kembali fungsi ini dengan amount_overwrite
+                    return settlement_qris_v2(
+                        api_key,
+                        tokens,
+                        items,
+                        payment_for,
+                        ask_overwrite=False, # Jangan tanya lagi
+                        amount_used=amount_used,
+                        amount_overwrite=valid_amount
+                    )
+                except (ValueError, IndexError) as e:
+                    print(f"Failed to parse valid amount from error message: {e}")
+                    print(f"Original Error: {decrypted_body}")
+                    return None
+            else:
+                print("Failed to initiate settlement.")
+                print(f"Error: {decrypted_body}")
+                return None
+
+        return decrypted_body["data"]["transaction_code"]
+
     except Exception as e:
         print("[decrypt err]", e)
-        return resp.text
+        # Coba dekripsi body untuk melihat pesan error jika ada
+        print(f"Raw response text: {resp.text}")
+        return None
 
 def get_qris_code(
     api_key: str,
@@ -182,27 +209,24 @@ def show_qris_payment_v2(
     items: list[PaymentItem],
     payment_for: str,
     ask_overwrite: bool,
-    amount_used: str = ""
+    amount_used: str = "",
 ):  
     transaction_id = settlement_qris_v2(
         api_key,
         tokens,
         items,
         payment_for,
-        ask_overwrite,
-        amount_used,
+        ask_overwrite=ask_overwrite, # type: ignore
+        amount_used=amount_used, # type: ignore
     )
-    
-    if not transaction_id:
+    if not transaction_id: # type: ignore
         print("Failed to create QRIS transaction.")
         return
-    
     print("Fetching QRIS code...")
     qris_code = get_qris_code(api_key, tokens, transaction_id)
     if not qris_code:
         print("Failed to get QRIS code.")
         return
-    print(f"QRIS data:\n{qris_code}")
     
     qr = qrcode.QRCode(
         version=1,
