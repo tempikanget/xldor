@@ -46,7 +46,7 @@ def show_main_menu(number, balance, balance_expired_at, quota_info, profile_info
     special_packages = segments_data.get("special_packages")
 
     print_header("✨ MENU UTAMA ✨") 
-    print(f"  {Style.GREEN}👤 Aku        : {profile_name} ({number}){Style.RESET}")
+    print(f"  {Style.GREEN}👤 Akun       : {profile_name} ({number}){Style.RESET}")
     print(f"{'-'*55}")
     print(f"  {Style.YELLOW}💰 Sisa Pulsa : Rp {balance}{Style.RESET}")
     print(f"  {Style.MAGENTA}📊 Sisa Kuota : {quota_remaining_str}{Style.RESET}")
