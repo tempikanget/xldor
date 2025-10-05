@@ -6,6 +6,7 @@ from app.config import HIDDEN_MENU_PIN
 from app.menus.util import clear_screen, pause, print_header, Style, ascii_art
 from app.client.engsel import *
 from app.service.auth import AuthInstance
+from app.menus.payment import show_transaction_history
 from app.menus.bookmark import show_bookmark_menu
 from app.menus.account import show_account_menu
 from app.menus.package import fetch_my_packages, get_packages_by_family, show_package_details
@@ -70,12 +71,13 @@ def show_main_menu(number, balance, balance_expired_at, quota_info, profile_info
     print(f"  {Style.BOLD}Pilih Menu:{Style.RESET}")
     print(f"  {Style.CYAN}[1]{Style.RESET}. 👤 Login / Ganti Akun")
     print(f"  {Style.CYAN}[2]{Style.RESET}. 📦 Lihat Paket Saya")
-    print(f"  {Style.CYAN}[3]{Style.RESET}. 🔥 Beli Paket Hot Promo")
-    print(f"  {Style.CYAN}[4]{Style.RESET}. 🔥 Beli Paket Hot Promo 2 (Bundling)")
-    print(f"  {Style.CYAN}[5]{Style.RESET}. 🔍 Beli Paket Berdasarkan Family Code")
-    print(f"  {Style.CYAN}[6]{Style.RESET}. 🛒 Beli Paket Bundle (Multi)")
-    print(f"  {Style.CYAN}[7]{Style.RESET}. 🔖 Bookmark Paket")
-    print(f"  {Style.CYAN}[8]{Style.RESET}. 📚 Bookmark Family Code")
+    print(f"  {Style.CYAN}[3]{Style.RESET}. 📜 Riwayat Transaksi")
+    print(f"  {Style.CYAN}[4]{Style.RESET}. 🔥 Beli Paket Hot Promo")
+    print(f"  {Style.CYAN}[5]{Style.RESET}. 🔥 Beli Paket Hot Promo 2 (Bundling)")
+    print(f"  {Style.CYAN}[6]{Style.RESET}. 🔍 Beli Paket Berdasarkan Family Code")
+    print(f"  {Style.CYAN}[7]{Style.RESET}. 🛒 Beli Paket Bundle (Multi)")
+    print(f"  {Style.CYAN}[8]{Style.RESET}. 🔖 Bookmark Paket")
+    print(f"  {Style.CYAN}[9]{Style.RESET}. 📚 Bookmark Family Code")
     print(f"  {Style.CYAN}[0]{Style.RESET}. 🎁 Tukar Poin")
     print(f"  {Style.CYAN}[88]{Style.RESET}. 🕵️ Hidden Menu")
     print(f"  {Style.CYAN}[99]{Style.RESET}. 🚪 Keluar Aplikasi")
@@ -143,19 +145,21 @@ def main():
                 fetch_my_packages()
                 continue
             elif choice == "3":
-                show_hot_menu()
+                show_transaction_history(AuthInstance.api_key, active_user["tokens"])
             elif choice == "4":
-                show_hot_menu2()
+                show_hot_menu()
             elif choice == "5":
+                show_hot_menu2()
+            elif choice == "6":
                 family_code = input("Enter family code (or '99' to cancel): ")
                 if family_code == "99":
                     continue
                 get_packages_by_family(family_code)
-            elif choice == "6":
-                show_bundle_menu()
             elif choice == "7":
-                show_bookmark_menu()
+                show_bundle_menu()
             elif choice == "8":
+                show_bookmark_menu()
+            elif choice == "9":
                 show_family_bookmark_menu()
             elif choice == "0":
                 run_point_exchange(active_user["tokens"])

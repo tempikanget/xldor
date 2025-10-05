@@ -964,3 +964,21 @@ def get_payment_status(api_key: str, tokens: dict, order_id: str) -> dict:
     res = send_api_request(api_key, path, payload, tokens["id_token"], "POST")
     
     return res
+
+def get_transaction_history(api_key: str, tokens: dict) -> dict:
+    """
+    Fetches the user's transaction history.
+    """
+    path = "payments/api/v8/transaction-history"
+    payload = {
+        "is_enterprise": False,
+        "lang": "en",
+        "page": 1,
+        "limit": 20, # Ambil 20 transaksi terakhir
+        "filter": {
+            "status": [],
+            "type": []
+        }
+    }
+    res = send_api_request(api_key, path, payload, tokens["id_token"], "POST")
+    return res

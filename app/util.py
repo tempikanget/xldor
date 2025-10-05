@@ -77,12 +77,20 @@ def ensure_api_key() -> str:
     save_api_key(api_key)
     return api_key
 
-def format_quota(quota_bytes):
-    """Formats bytes into a human-readable string (GB, MB, KB)."""
+def format_quota(quota_bytes, return_tuple=False):
+    """Formats bytes into a human-readable string (GB, MB, KB).
+    
+    Args:
+        quota_bytes: The quota in bytes.
+        return_tuple: If True, returns a tuple of (value, unit).
+    """
     if quota_bytes >= 1_000_000_000:
-        return f"{quota_bytes / (1024**3):.2f} GB"
+        val, unit = f"{quota_bytes / (1024**3):.2f}", "GB"
     elif quota_bytes >= 1_000_000:
-        return f"{quota_bytes / (1024**2):.2f} MB"
+        val, unit = f"{quota_bytes / (1024**2):.2f}", "MB"
     elif quota_bytes >= 1_000:
-        return f"{quota_bytes / 1024:.2f} KB"
-    return f"{quota_bytes} Bytes"
+        val, unit = f"{quota_bytes / 1024:.2f}", "KB"
+    else:
+        val, unit = f"{quota_bytes}", "Bytes"
+    
+    return (val, unit) if return_tuple else f"{val} {unit}"

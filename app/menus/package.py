@@ -559,29 +559,61 @@ def fetch_my_packages():
                 expired_at_str = datetime.fromtimestamp(expired_at_timestamp).strftime('%Y-%m-%d %H:%M:%S')
             
             print(f"  {Style.GREEN}Nama       : {name}{Style.RESET}")
-            if initial_is_unlimited or detail_is_unlimited:
-                print(f"  {Style.GREEN}Sisa Kuota : Unlimited{Style.RESET}")
-            elif max(initial_total, detail_total) > 0:
-                # Gunakan nilai terbesar dari kedua sumber untuk akurasi maksimal
-                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(max(initial_remaining, detail_remaining))} / {format_quota(max(initial_total, detail_total))}{Style.RESET}")
-            else:
-                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(max(initial_remaining, detail_remaining))}{Style.RESET}")
             family_code = package_details.get("package_family", {}).get("package_family_code", "N/A")
             print(f"  {Style.GREEN}Family Code: {Style.YELLOW}{family_code}{Style.RESET}")
         else:
             # Fallback jika detail paket gagal diambil
             print(f"  {Style.GREEN}Nama       : {initial_name}{Style.RESET}")
-            if initial_is_unlimited:
-                print(f"  {Style.GREEN}Sisa Kuota : Unlimited{Style.RESET}")
-            elif initial_total > 0:
-                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(initial_remaining)} / {format_quota(initial_total)}{Style.RESET}")
-            else:
-                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(initial_remaining)}{Style.RESET}")
         
         print(f"  {Style.GREEN}Quota Code : {quota_code}{Style.RESET}")
         print(f"  {Style.GREEN}Masa Aktif : {validity}{Style.RESET}")
         print(f"  {Style.GREEN}Exp. Date  : {expired_at_str}{Style.RESET}")
         print(f"  {Style.GREEN}Group Code : {group_code}{Style.RESET}")
+
+        # --- PENAMBAHAN KODE UNTUK MENAMPILKAN BENEFITS ---
+        benefits = quota.get("benefits", [])
+        if benefits:
+            print(f"  {Style.YELLOW}Benefits   :{Style.RESET}")
+            for benefit in benefits:
+                benefit_id = benefit.get("id", "")
+                name = benefit.get("name", "")
+                data_type = benefit.get("data_type", "N/A")
+                
+                print("  -----------------------------------------------------")
+                print(f"    ID    : {benefit_id}")
+                print(f"    Name  : {name}")
+                print(f"    Type  : {data_type}")
+
+                remaining = benefit.get("remaining", 0)
+                total = benefit.get("total", 0)
+                kuota_str = ""
+
+                if data_type == "DATA":
+                    remaining_val, remaining_unit = format_quota(remaining, True)
+                    total_val, total_unit = format_quota(total, True)
+                    
+                    if total > 0:
+                        kuota_str = f"{Style.RED}{remaining_val}{Style.RESET} {remaining_unit} / {Style.BLUE}{total_val}{Style.RESET} {total_unit}"
+                    else:
+                        kuota_str = f"{Style.RED}{remaining_val}{Style.RESET} {remaining_unit}"
+                elif data_type == "VOICE":
+                    if total > 0:
+                        kuota_str = f"{remaining/60:.2f} / {total/60:.2f} menit"
+                    else:
+                        kuota_str = f"{remaining/60:.2f} menit"
+                elif data_type == "TEXT":
+                    if total > 0:
+                        kuota_str = f"{remaining} / {total} SMS"
+                    else:
+                        kuota_str = f"{remaining} SMS"
+                else:
+                    if total > 0:
+                        kuota_str = f"{remaining} / {total}"
+                    else:
+                        kuota_str = str(remaining)
+                
+                print(f"    Kuota : {kuota_str}")
+            print("  -----------------------------------------------------")
         
         my_packages.append({
             "number": num,
