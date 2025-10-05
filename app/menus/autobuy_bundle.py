@@ -183,68 +183,63 @@ def execute_unlimited_tiktok_autobuy():
         pause()
         return
 
-    package_basic = {
-        "family_name": "Unlimited Turbo",
-        "family_code": "08a3b1e6-8e78-4e45-a540-b40f06871cfe",
-        "is_enterprise": None,
-        "variant_name": "For Xtra Combo",
-        "option_name": "Basic",
-        "order": 4
-    }
+    # 1. Cek validity harga pada beberapa paket
+    print("Memeriksa harga paket, mohon tunggu...")
+    packages_to_check = [
+        { "order": 1, "expected_price": 99000, "variant_name": "For Xtra Combo", "option_name": "Premium" },
+        { "order": 2, "expected_price": 75000, "variant_name": "For Xtra Combo", "option_name": "VIP" },
+        { "order": 3, "expected_price": 51000, "variant_name": "For Xtra Combo", "option_name": "Plus" },
+        { "order": 4, "expected_price": 33000, "variant_name": "For Xtra Combo", "option_name": "Basic" },
+    ]
 
-    package_premium = {
-        "family_name": "Unlimited Turbo",
-        "family_code": "08a3b1e6-8e78-4e45-a540-b40f06871cfe",
-        "is_enterprise": None,
-        "variant_name": "For Xtra Combo",
-        "option_name": "Premium",
-        "order": 1
-    }
+    package_details_list = []
+    prices_match_count = 0
 
-    package_tiktok = {
-        "family_name": "Unlimited Turbo",
-        "family_code": "08a3b1e6-8e78-4e45-a540-b40f06871cfe",
-        "is_enterprise": None,
-        "variant_name": "For Xtra Combo",
-        "option_name": "Tiktok",
-        "order": 6
-    }
+    for pkg_info in packages_to_check:
+        detail = get_package_details(
+            AuthInstance.api_key,
+            active_user["tokens"],
+            "08a3b1e6-8e78-4e45-a540-b40f06871cfe",
+            pkg_info["variant_name"],
+            pkg_info["order"],
+            None, # is_enterprise
+            silent=True
+        )
+        if not detail:
+            print(f"\n{Style.RED}Gagal mengambil detail untuk paket order: {pkg_info['order']}{Style.RESET}")
+            pause()
+            return
+        
+        package_details_list.append(detail)
+        actual_price = detail["package_option"]["price"]
+        if actual_price == pkg_info["expected_price"]:
+            prices_match_count += 1
 
-    # 1. Cek harga paket basic dan premium
-    package_detail_basic = get_package_details(
-        AuthInstance.api_key,
-        active_user["tokens"],
-        package_basic.get("family_code"),
-        package_basic.get("variant_name"),
-        package_basic.get("order"),
-        package_basic.get("is_enterprise"),
-        silent=False
-    )
-
-    package_detail_premium = get_package_details(
-        AuthInstance.api_key,
-        active_user["tokens"],
-        package_premium.get("family_code"),
-        package_premium.get("variant_name"),
-        package_premium.get("order"),
-        package_premium.get("is_enterprise"),
-        silent=False
-    )
-
-    if not package_detail_basic or not package_detail_premium:
-        print(f"\n{Style.RED}Gagal mengambil detail paket.{Style.RESET}")
+    # 2. Jika semua harga tidak sesuai
+    if prices_match_count == 0:
+        print(f"\n{Style.RED}> ⚠️ Harga paket tidak sesuai dengan ketentuan pembelian. ⚠️\n🚫 Ulangi besok hari atau buang kartumu GANTI DENGAN YANG BARU 🔥😎{Style.RESET}")
         pause()
         return
 
-    price_basic = package_detail_basic["package_option"]["price"]
-    price_premium = package_detail_premium["package_option"]["price"]
+    # 3. Jika sebagian harga sesuai, langsung ke step 6
+    elif 0 < prices_match_count < len(packages_to_check):
+        print("Beberapa harga sesuai, langsung ke proses payment Unlimited Tiktok...")
+        # Langsung ke step 6 (pembelian paket Tiktok)
 
-    if price_basic == 10000 and price_premium == 99000:
-        print("Harga sesuai, langsung ke proses payment Unlimited Tiktok...")
-        # Langsung ke step 7
-    elif price_basic == 33000:
-        # Lanjutkan dengan proses pembelian pulsa dan timer
-        print("Melanjutkan proses payment dengan metode pulsa...")
+    # 4. Jika semua harga sesuai, lanjutkan dengan pembelian pulsa dan timer
+    else: # prices_match_count == len(packages_to_check)
+        print("Semua harga sesuai, melanjutkan proses payment dengan metode pulsa...")
+        
+        # Ambil detail paket Basic (order 4) dari list yang sudah di-fetch
+        package_detail_basic = next((d for d in package_details_list if d['package_option']['order'] == 4), None)
+
+        if not package_detail_basic:
+            print(f"\n{Style.RED}Gagal menemukan detail paket Basic (order 4) yang sudah di-fetch.{Style.RESET}")
+            pause()
+            return
+
+        price_basic = package_detail_basic["package_option"]["price"]
+
         payment_items_1 = [{
             "item_code": package_detail_basic["package_option"]["package_option_code"],
             "product_type": "",
@@ -259,8 +254,9 @@ def execute_unlimited_tiktok_autobuy():
             active_user["tokens"],
             payment_items_1,
             "BUY_PACKAGE",
-            False,
-            amount_used="first"
+            ask_overwrite=False, # Jangan tanya overwrite
+            amount_used="first",
+            amount_overwrite=33000 # Hardcode amount
         )
 
         if not settlement_response or settlement_response.get("status") != "SUCCESS":
@@ -269,7 +265,7 @@ def execute_unlimited_tiktok_autobuy():
             pause()
             return
 
-        # Timer 10 menit
+        # 5. Timer 10 menit
         print("\nTunggu waktu 10 Menit, jangan tutup Script/Termux")
         try:
             for i in range(600, 0, -1):
@@ -289,28 +285,34 @@ def execute_unlimited_tiktok_autobuy():
             return
         print("- Active user token renewed successfully - fetching package")
         active_user = AuthInstance.get_active_user() # get updated tokens
-    else:
-        print(f"\n{Style.RED}> ⚠️ Oops! Harga Paket Nggak Sesuai Ketentuan Pembelian ⚠️\n🚫 Coba lagi besok hari ya… atau 💳 ganti kartu SIM kamu dengan yang baru 🔥😎{Style.RESET}")
-        pause()
-        return
 
-    # 7. Lanjut cek paket Tiktok
+    # 6. Lanjut cek paket Tiktok
+    print("Mengambil detail paket Tiktok...")
+    package_tiktok_info = {
+        "family_name": "Unlimited Turbo",
+        "family_code": "08a3b1e6-8e78-4e45-a540-b40f06871cfe",
+        "is_enterprise": None,
+        "variant_name": "For Xtra Combo",
+        "option_name": "Tiktok",
+        "order": 6
+    }
+
     package_detail_tiktok = get_package_details(
         AuthInstance.api_key,
         active_user["tokens"],
-        package_tiktok.get("family_code"),
-        package_tiktok.get("variant_name"),
-        package_tiktok.get("order"),
-        package_tiktok.get("is_enterprise"),
+        package_tiktok_info.get("family_code"),
+        package_tiktok_info.get("variant_name"),
+        package_tiktok_info.get("order"),
+        package_tiktok_info.get("is_enterprise"),
         silent=False
     )
 
     if not package_detail_tiktok:
-        print(f"\n{Style.RED}Gagal mengambil detail untuk paket: {package_tiktok.get('option_name')}{Style.RESET}")
+        print(f"\n{Style.RED}Gagal mengambil detail untuk paket: {package_tiktok_info.get('option_name')}{Style.RESET}")
         pause()
         return
 
-    # 8. Lanjut payment dengan metode Qris
+    # 7. Lanjut payment dengan metode Qris
     payment_items_2 = [{
         "item_code": package_detail_tiktok["package_option"]["package_option_code"],
         "product_type": "",
@@ -320,6 +322,7 @@ def execute_unlimited_tiktok_autobuy():
         "token_confirmation": package_detail_tiktok["token_confirmation"],
     }]
 
+    # 8. Qris muncul
     print("Memproses pembayaran dengan QRIS...")
     transaction_id = settlement_qris_v2(
         AuthInstance.api_key,
