@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import datetime
 from app.service.auth import AuthInstance
 from app.client.engsel import get_family, get_family_v2, get_package, get_addons, get_package_details, purchase_package, send_api_request
 from app.service.bookmark import BookmarkInstance
@@ -10,6 +11,7 @@ from app.client.qris import show_qris_payment_v2
 from app.client.ewallet import show_multipayment_v2
 from app.client.balance import settlement_balance
 from app.service.family_bookmark import FamilyBookmarkInstance
+from app.util import format_quota
 from app.type_dict import PaymentItem
 
 
@@ -400,19 +402,21 @@ def get_packages_by_family(
             # print(f" Code: {variant_code}")
             for option in variant["package_options"]:
                 option_name = option["name"]
+                validity = option.get("validity", "")
                 
                 packages.append({
                     "number": option_number,
                     "variant_name": variant_name,
                     "option_name": option_name,
                     "price": option["price"],
+                    "validity": validity,
                     "code": option["package_option_code"],
                     "option_order": option["order"]
                 })
                 
                 # print(json.dumps(option, indent=2))
                 
-                print(f"  {Style.CYAN}[{option_number:2d}]{Style.RESET}. {option_name} - Rp {option['price']}")
+                print(f"  {Style.CYAN}[{option_number:2d}]{Style.RESET}. {Style.YELLOW}{option_name}{Style.RESET} - {Style.GREEN}Rp {option['price']}{Style.RESET} ({Style.BLUE}{validity}{Style.RESET})")
                 
                 option_number += 1
             
@@ -521,19 +525,63 @@ def fetch_my_packages():
     for quota in quotas:
         quota_code = quota["quota_code"] # Can be used as option_code
         group_code = quota["group_code"]
-        name = quota["name"]
+        initial_name = quota["name"]
+        # Ambil data kuota dari sumber utama (daftar paket)
+        initial_remaining = quota.get("remaining", 0)
+        initial_total = quota.get("total", 0)
+        initial_is_unlimited = quota.get("is_unlimited", False)
+
+        expired_at_timestamp_from_quota = quota.get("expired_at")
         
         print(f"fetching package no. {num} details...")
         package_details = get_package(api_key, tokens, quota_code)
         
+        validity = "N/A"
+        expired_at_str = "N/A"
         print(f"{'-'*55}")
-        print(f"Paket #{num}")
-        print(f"  Nama       : {name}")
-        print(f"  Quota Code : {quota_code}")
+        print(f"{Style.CYAN}Paket #{num}{Style.RESET}")
+        
         if package_details:
+            # Ambil data yang lebih akurat dari detail paket
+            package_option = package_details.get("package_option", {})
+            
+            # Ambil data kuota dari detail paket sebagai sumber kedua
+            detail_remaining = package_option.get("remaining", 0)
+            detail_total = package_option.get("total", 0)
+            detail_is_unlimited = package_option.get("is_unlimited", False)
+
+            name = package_option.get("name", initial_name)
+            validity = package_option.get("validity", "N/A")
+            
+            # Prioritaskan expired_at dari detail, fallback ke list quota awal
+            expired_at_timestamp = package_option.get("expired_at") or expired_at_timestamp_from_quota
+            if expired_at_timestamp:
+                expired_at_str = datetime.fromtimestamp(expired_at_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+            
+            print(f"  {Style.GREEN}Nama       : {name}{Style.RESET}")
+            if initial_is_unlimited or detail_is_unlimited:
+                print(f"  {Style.GREEN}Sisa Kuota : Unlimited{Style.RESET}")
+            elif max(initial_total, detail_total) > 0:
+                # Gunakan nilai terbesar dari kedua sumber untuk akurasi maksimal
+                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(max(initial_remaining, detail_remaining))} / {format_quota(max(initial_total, detail_total))}{Style.RESET}")
+            else:
+                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(max(initial_remaining, detail_remaining))}{Style.RESET}")
             family_code = package_details.get("package_family", {}).get("package_family_code", "N/A")
-            print(f"  Family Code: {family_code}")
-        print(f"  Group Code : {group_code}")
+            print(f"  {Style.GREEN}Family Code: {Style.YELLOW}{family_code}{Style.RESET}")
+        else:
+            # Fallback jika detail paket gagal diambil
+            print(f"  {Style.GREEN}Nama       : {initial_name}{Style.RESET}")
+            if initial_is_unlimited:
+                print(f"  {Style.GREEN}Sisa Kuota : Unlimited{Style.RESET}")
+            elif initial_total > 0:
+                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(initial_remaining)} / {format_quota(initial_total)}{Style.RESET}")
+            else:
+                print(f"  {Style.GREEN}Sisa Kuota : {Style.GREEN}{format_quota(initial_remaining)}{Style.RESET}")
+        
+        print(f"  {Style.GREEN}Quota Code : {quota_code}{Style.RESET}")
+        print(f"  {Style.GREEN}Masa Aktif : {validity}{Style.RESET}")
+        print(f"  {Style.GREEN}Exp. Date  : {expired_at_str}{Style.RESET}")
+        print(f"  {Style.GREEN}Group Code : {group_code}{Style.RESET}")
         
         my_packages.append({
             "number": num,

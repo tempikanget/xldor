@@ -27,7 +27,8 @@ def get_package_from_bookmark():
         return None, None
 
     for idx, bm in enumerate(bookmarks):
-        print(f"  {Style.CYAN}[{idx + 1}]{Style.RESET}. {bm['family_name']} - {bm['variant_name']} - {bm['option_name']}")
+        validity_str = f" ({bm.get('validity', '')})" if bm.get('validity') else ""
+        print(f"  {Style.CYAN}[{idx + 1}]{Style.RESET}. {bm['family_name']} - {bm['variant_name']} - {bm['option_name']}{validity_str}")
     
     print("\n" + ("-"*55))
     print(f"  {Style.CYAN}[00]{Style.RESET}. ↩️  Kembali")

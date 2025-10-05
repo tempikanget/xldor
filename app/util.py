@@ -76,3 +76,13 @@ def ensure_api_key() -> str:
 
     save_api_key(api_key)
     return api_key
+
+def format_quota(quota_bytes):
+    """Formats bytes into a human-readable string (GB, MB, KB)."""
+    if quota_bytes >= 1_000_000_000:
+        return f"{quota_bytes / (1024**3):.2f} GB"
+    elif quota_bytes >= 1_000_000:
+        return f"{quota_bytes / (1024**2):.2f} MB"
+    elif quota_bytes >= 1_000:
+        return f"{quota_bytes / 1024:.2f} KB"
+    return f"{quota_bytes} Bytes"

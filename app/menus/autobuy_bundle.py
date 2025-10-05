@@ -108,7 +108,7 @@ def execute_autobuy(bundle_data, payment_method):
             package.get("variant_code") or package.get("variant_name"),
             package.get("order"),
             package.get("is_enterprise"),
-            silent=True
+            silent=False
         )
         if not package_detail:
             print(f"\n{Style.RED}Gagal mengambil detail untuk paket: {package.get('option_name')}{Style.RESET}")

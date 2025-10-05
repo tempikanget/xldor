@@ -35,7 +35,8 @@ def show_hot_menu():
             package_name = f"{p.get('family_name')} - {p.get('variant_name')} - {p.get('option_name')}"
             
             print(border_top)
-            print_bordered_line(f"{Style.CYAN}[{idx + 1}]{Style.RESET}. {package_name}", width)
+            validity_str = f" ({p.get('validity', '')})" if p.get('validity') else ""
+            print_bordered_line(f"{Style.CYAN}[{idx + 1}]{Style.RESET}. {package_name}{validity_str}", width)
             print(line_separator)
             print_bordered_line(f"     {Style.GREEN}Fam:{Style.RESET} {p.get('family_code', 'N/A')}", width)
             print_bordered_line(f"     {Style.YELLOW}Enterprise:{Style.RESET} {Style.BLUE + 'Ya' + Style.RESET if p.get('is_enterprise') else Style.RED + 'Tidak' + Style.RESET}", width)

@@ -20,7 +20,8 @@ def show_bookmark_menu():
         
         print("Daftar Bookmark:")
         for idx, bm in enumerate(bookmarks):
-            print(f"  {Style.CYAN}[{idx + 1}]{Style.RESET}. {bm['family_name']} - {bm['variant_name']} - {bm['option_name']}")
+            validity_str = f" ({bm.get('validity', '')})" if bm.get('validity') else ""
+            print(f"  {Style.CYAN}[{idx + 1}]{Style.RESET}. {bm['family_name']} - {bm['variant_name']} - {bm['option_name']}{validity_str}")
         
         print("\n" + ("-"*55))
         print("  🔢  Pilih nomor untuk melihat detail paket")
@@ -37,6 +38,7 @@ def show_bookmark_menu():
                 del_bm = bookmarks[int(del_choice) - 1]
                 BookmarkInstance.remove_bookmark(
                     del_bm["family_code"],
+                    del_bm.get("validity", ""),
                     del_bm["is_enterprise"],
                     del_bm["variant_name"],
                     del_bm["order"],

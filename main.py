@@ -1,6 +1,7 @@
 import sys
 import concurrent.futures
 import app.config  # Load environment variables first
+from app.util import format_quota
 from app.config import HIDDEN_MENU_PIN
 from app.menus.util import clear_screen, pause, print_header, Style, ascii_art
 from app.client.engsel import *
@@ -15,16 +16,6 @@ from app.menus.hot import show_hot_menu, show_hot_menu2
 from app.menus.autobuy_bundle import show_autobuy_bundle_menu
 from app.menus.points import run_point_exchange
 from app.service.sentry import enter_sentry_mode
-
-def format_quota(quota_bytes):
-    """Formats bytes into a human-readable string (GB, MB, KB)."""
-    if quota_bytes >= 1_000_000_000:
-        return f"{quota_bytes / (1024**3):.2f} GB"
-    elif quota_bytes >= 1_000_000:
-        return f"{quota_bytes / (1024**2):.2f} MB"
-    elif quota_bytes >= 1_000:
-        return f"{quota_bytes / 1024:.2f} KB"
-    return f"{quota_bytes} Bytes"
 
 def show_main_menu(number, balance, balance_expired_at, quota_info, profile_info, segments_data):
     clear_screen()
