@@ -86,7 +86,65 @@ BUNDLES = [
                 }
             ]
         }
-    }
+    },
+    {
+        "menu_title": "Conference +5Gb (QRIS)",
+        "payment_method": "QRIS",
+        "display_price": "Rp. 4000 (Refund)",
+        "data": {
+            "name": "Conference +5Gb (QRIS)",
+            "price": "Rp.4000",
+            "detail": "Support E-Wallet & QRIS.",
+            "packages": [
+                {
+                    "family_name": "Kuota Bersama",
+                    "family_code": "d018a3ad-172f-433c-b291-f574f4b6fbad",
+                    "is_enterprise": None,
+                    "variant_name": "Kuota Bersama",
+                    "option_name": "Kuota HP Sekeluarga 50GB",
+                    "order": 3
+                },
+                {
+                    "family_name": "Work & School",
+                    "family_code": "5d63dddd-4f90-4f4c-8438-2f005c20151f",
+                    "is_enterprise": False,
+                    "variant_name": "Work & School",
+                    "variant_code": "5b59c55b-0dc7-4f34-a6e9-6afa233ad53b",
+                    "option_name": "Conference 5GB",
+                    "order": 2
+                }
+            ]
+        }
+    },
+    {
+        "menu_title": "Conference +5Gb (ShopeePay)",
+        "payment_method": "SHOPEEPAY",
+        "display_price": "Rp. 4000 (Refund)",
+        "data": {
+            "name": "Conference +5Gb (ShopeePay)",
+            "price": "Rp.4000",
+            "detail": "Support E-Wallet & QRIS.",
+            "packages": [
+                {
+                    "family_name": "Kuota Bersama",
+                    "family_code": "d018a3ad-172f-433c-b291-f574f4b6fbad",
+                    "is_enterprise": None,
+                    "variant_name": "Kuota Bersama",
+                    "option_name": "Kuota HP Sekeluarga 50GB",
+                    "order": 3
+                },
+                {
+                    "family_name": "Work & School",
+                    "family_code": "5d63dddd-4f90-4f4c-8438-2f005c20151f",
+                    "is_enterprise": False,
+                    "variant_name": "Work & School",
+                    "variant_code": "5b59c55b-0dc7-4f34-a6e9-6afa233ad53b",
+                    "option_name": "Conference 5GB",
+                    "order": 2
+                }
+            ]
+        }
+    },
 ]
 
 def execute_autobuy(bundle_data, payment_method):
@@ -357,7 +415,7 @@ def show_autobuy_bundle_menu():
     print_header("✨ AUTOBUY BUNDLE (HIDDEN) ✨")
     for i, bundle in enumerate(BUNDLES, 1):
         print(f"  [{i}] {bundle['menu_title']}. || {bundle['display_price']}")
-    print("  [3] Unlimited Tiktok Auto pilot Buy (Qris) || Rp. 30000")
+    print("  [5] Unlimited Tiktok Auto pilot Buy (Qris) || Rp. 30000")
     print("\n  [99] Kembali ke Menu Utama")
     print(f"{'-'*55}")
     choice = input("Pilihan > ")
@@ -365,7 +423,7 @@ def show_autobuy_bundle_menu():
     if choice.isdigit() and 1 <= int(choice) <= len(BUNDLES):
         selected_bundle = BUNDLES[int(choice) - 1]
         execute_autobuy(selected_bundle["data"], selected_bundle["payment_method"])
-    elif choice == "3":
+    elif choice == "5":
         execute_unlimited_tiktok_autobuy()
     elif choice == "99":
         return
