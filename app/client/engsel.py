@@ -203,15 +203,18 @@ def send_api_request(
     resp = requests.post(url, headers=headers, data=json.dumps(body), timeout=30)
     
     # print(f"Headers: {json.dumps(headers, indent=2)}")
-    # print(f"Response body: {resp.text}")
 
     try:
+        # Coba parse response sebagai JSON terlebih dahulu
         decrypted_body = decrypt_xdata(api_key, json.loads(resp.text))
-        # print(f"Decrypted body: {json.dumps(decrypted_body, indent=2)}")
         return decrypted_body
+    except json.JSONDecodeError:
+        # Jika response bukan JSON (misalnya, halaman error HTML dari Cloudflare)
+        print(f"[request err] Response is not valid JSON. Server might be down. Response body:\n{resp.text[:500]}...")
+        return None
     except Exception as e:
         print("[decrypt err]", e)
-        return resp.text
+        return None
 
 def get_profile(api_key: str, access_token: str, id_token: str) -> dict:
     path = "api/v8/profile"
@@ -226,7 +229,7 @@ def get_profile(api_key: str, access_token: str, id_token: str) -> dict:
     # print("Fetching profile...")
     res = send_api_request(api_key, path, raw_payload, id_token, "POST")
 
-    return res.get("data")
+    return res.get("data") if res else None
 
 def get_balance(api_key: str, id_token: str) -> dict:
     path = "api/v8/packages/balance-and-credit"
@@ -240,7 +243,7 @@ def get_balance(api_key: str, id_token: str) -> dict:
     res = send_api_request(api_key, path, raw_payload, id_token, "POST")
     # print(f"[GB-256]:\n{json.dumps(res, indent=2)}")
     
-    if "data" in res:
+    if res and "data" in res:
         if "balance" in res["data"]:
             return res["data"]["balance"]
     else:
@@ -965,7 +968,7 @@ def get_payment_status(api_key: str, tokens: dict, order_id: str) -> dict:
     
     return res
 
-def get_transaction_history(api_key: str, tokens: dict) -> dict:
+def get_transaction_history(api_key: str, tokens: dict, page: int = 1, limit: int = 20) -> dict:
     """
     Fetches the user's transaction history.
     """
@@ -973,8 +976,8 @@ def get_transaction_history(api_key: str, tokens: dict) -> dict:
     payload = {
         "is_enterprise": False,
         "lang": "en",
-        "page": 1,
-        "limit": 20, # Ambil 20 transaksi terakhir
+        "page": page,
+        "limit": limit,
         "filter": {
             "status": [],
             "type": []

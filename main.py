@@ -131,7 +131,7 @@ def main():
 
             except (Exception, concurrent.futures.CancelledError, concurrent.futures.TimeoutError) as e:
                 print(f"Gagal memuat data: {e}")
-                AuthInstance.logout() # Logout on critical data fetch failure
+                AuthInstance.set_active_user(None) # Logout on critical data fetch failure
                 pause()
                 continue
             
