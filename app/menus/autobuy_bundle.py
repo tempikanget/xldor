@@ -268,12 +268,14 @@ def execute_unlimited_tiktok_autobuy():
             pause()
             return
         
+        # Tambahkan 'order' ke dalam detail paket untuk referensi nanti
+        detail['order_from_request'] = pkg_info['order']
         package_details_list.append(detail)
         actual_price = detail["package_option"]["price"]
         if actual_price == pkg_info["expected_price"]:
             prices_match_count += 1
 
-    # 2. Jika semua harga tidak sesuai
+    # 2. Jika tidak ada harga yang sesuai
     if prices_match_count == 0:
         print(f"\n{Style.RED}> ⚠️ Harga paket tidak sesuai dengan ketentuan pembelian. ⚠️\n🚫 Ulangi besok hari atau buang kartumu GANTI DENGAN YANG BARU 🔥😎{Style.RESET}")
         pause()
@@ -289,7 +291,7 @@ def execute_unlimited_tiktok_autobuy():
         print("Semua harga sesuai, melanjutkan proses payment dengan metode pulsa...")
         
         # Ambil detail paket Basic (order 4) dari list yang sudah di-fetch
-        package_detail_basic = next((d for d in package_details_list if d['package_option']['order'] == 4), None)
+        package_detail_basic = next((d for d in package_details_list if d.get('order_from_request') == 4), None)
 
         if not package_detail_basic:
             print(f"\n{Style.RED}Gagal menemukan detail paket Basic (order 4) yang sudah di-fetch.{Style.RESET}")
@@ -313,8 +315,7 @@ def execute_unlimited_tiktok_autobuy():
             payment_items_1,
             "BUY_PACKAGE",
             ask_overwrite=False, # Jangan tanya overwrite
-            amount_used="first",
-            amount_overwrite=33000 # Hardcode amount
+            amount_used="first"
         )
 
         if not settlement_response or settlement_response.get("status") != "SUCCESS":
