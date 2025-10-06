@@ -291,7 +291,7 @@ def execute_unlimited_tiktok_autobuy():
         print("Semua harga sesuai, melanjutkan proses payment...")
         
         # Ambil detail paket Basic (order 4) dari list yang sudah di-fetch
-        package_detail_basic = next((d for d in package_details_list if d.get('order_from_request') == 4), None)
+        package_detail_basic = next((d for d in package_details_list if d.get('order_from_request') == 1), None)
 
         if not package_detail_basic:
             print(f"\n{Style.RED}Gagal menemukan detail paket Basic (order 4) yang sudah di-fetch.{Style.RESET}")
