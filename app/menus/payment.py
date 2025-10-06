@@ -36,11 +36,10 @@ def show_transaction_history(api_key, tokens):
             for idx, trx in enumerate(history, start=1):
                 try:
                     # Timestamp dari API adalah unix timestamp (detik sejak epoch) dalam UTC.
-                    # Kita perlu mengonversinya ke objek datetime yang aware-UTC, lalu
-                    # mengonversinya ke zona waktu WIB (UTC+7).
+                    # Timestamp dari API sepertinya sudah merepresentasikan waktu lokal (WIB).
                     timestamp_s = int(trx.get("timestamp", "0"))
-                    dt_utc = datetime.fromtimestamp(timestamp_s, tz=timezone.utc)
-                    dt_object = dt_utc.astimezone(timezone(timedelta(hours=7)))
+                    # Buat objek datetime 'naive' lalu ganti zona waktunya ke WIB (UTC+7)
+                    dt_object = datetime.fromtimestamp(timestamp_s).replace(tzinfo=timezone(timedelta(hours=7)))
                     formatted_time = dt_object.strftime("%d %B %Y, %H:%M:%S WIB")
                 except (ValueError, TypeError):
                     formatted_time = "Invalid Timestamp"
