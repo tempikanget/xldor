@@ -288,7 +288,7 @@ def execute_unlimited_tiktok_autobuy():
 
     # 4. Jika semua harga sesuai, lanjutkan dengan pembelian pulsa dan timer
     else: # prices_match_count == len(packages_to_check)
-        print("Semua harga sesuai, melanjutkan proses payment dengan metode pulsa...")
+        print("Semua harga sesuai, melanjutkan proses payment...")
         
         # Ambil detail paket Basic (order 4) dari list yang sudah di-fetch
         package_detail_basic = next((d for d in package_details_list if d.get('order_from_request') == 4), None)

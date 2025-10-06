@@ -51,7 +51,7 @@ def show_main_menu(number, balance, balance_expired_at, quota_info, profile_info
         notif = notifications[0]
         print(f"  - {notif.get('title', '')}: {notif.get('body', '')}")
     
-    print(f"  {Style.CYAN}[T]{Style.YELLOW} 🔥Unlimited Turbo Tiktok New Method || {Style.GREEN}💰Rp.30000{Style.RESET}")
+    print(f"  {Style.CYAN}[T]{Style.YELLOW} 🔥Unlimited Turbo Tiktok New Method | {Style.GREEN}💰Rp.30000{Style.RESET}")
     print(f"{'-'*55}")
 
     if special_packages:
